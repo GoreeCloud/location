@@ -176,7 +176,7 @@ jobs:
       - name: Verify exact Location source revision
         run: test "$(git rev-parse HEAD)" = "$LOCATION_SOURCE_REVISION"
 
-      - name: Verify current Glaze UI V1.3 source contract
+      - name: Verify implemented Glaze source and current migration target
         shell: bash
         run: |
           set -euo pipefail
@@ -185,8 +185,14 @@ jobs:
           grep -F 'fc7cc91d2eace8da2371371c2855c24cbcb326a1' src/glaze-v1-3.css > /dev/null
           grep -F 'css/glaze-v1.3.0.css' src/glaze-v1-3.css > /dev/null
           grep -F 'js/glaze-v1.3.0.mjs' src/glaze-v1-3.css > /dev/null
-          if grep -R -n -E 'data-glaze-version="2\.|src/glaze-v1-1\.ts|Target: 1\.1\.0|current Stable.*(1\.1\.0|2\.0\.0)' src index.html; then
-            echo "Location web activation still contains a stale pre-reset Glaze source contract." >&2
+          grep -F 'GLAZE UI V1.6 / 1.6.0' ../../docs/GLAZE_UI_ADOPTION.md > /dev/null
+          grep -F 'glaze_ui_required: "1.6.0"' ../../goreecloud.platform.yaml > /dev/null
+          if grep -R -n -E 'data-glaze-version="2\.|src/glaze-v1-1\.ts|Target: 1\.1\.0' src index.html; then
+            echo "Location web activation contains a stale pre-reset Glaze source contract." >&2
+            exit 1
+          fi
+          if grep -R -n -E 'Current (required|approved).*1\.(1|2|3|4|5)(\.|\b)' ../../docs/GLAZE_UI_ADOPTION.md ../../goreecloud.platform.yaml; then
+            echo "Location governance contains a stale current Glaze target declaration." >&2
             exit 1
           fi
 
