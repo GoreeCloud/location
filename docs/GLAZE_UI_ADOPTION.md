@@ -1,75 +1,80 @@
-# GoreeCloud Location — GLAZE UI Adoption
+# GoreeCloud Location — GLAZE UI adoption
 
-## Status
+## Current state
 
-Development source migration only. This record does not establish downstream conformance, Stable Location qualification, deployment, or production approval.
+GoreeCloud Location is a **Forge-stage Development candidate**. The consolidated web source currently implements the repository-local **GLAZE UI V1.3 / 1.3.0 — Adaptive Resonance** mapping. The current approved shared consumer target is **GLAZE UI V1.6 / 1.6.0**, so Location remains `applicable-migration-required`.
 
-## Current shared authority versus implemented Location source
+This record preserves the actual implemented V1.3 bytes. It does not relabel them as V1.6 and does not reuse historical source/build evidence as current-target acceptance.
 
-- Current required shared consumer target: **GLAZE UI V1.4.1 / `1.4.1`**
-- Current Stable shared authority revision: `4fab9da0fad2e5c974e0e66ec88632c61745751c`
-- Immediate shared rollback baseline: `1.4.0`
-- Current implemented Location web source mapping: **GLAZE UI V1.3 / `1.3.0` — Adaptive Resonance**
-- Implemented V1.3 source integration anchor: `fc7cc91d2eace8da2371371c2855c24cbcb326a1`
-- Implemented V1.3 web entrypoint: `css/glaze-v1.3.0.css`
-- Implemented V1.3 runtime entrypoint: `js/glaze-v1.3.0.mjs`
-- Current Platform Contract authority: **0.2 with exactly seven Integral Platform Systems**
-- GoreeCloud Sync: **separately governed application/service functionality, not an eighth Integral Platform System**
+## Current shared authority
 
-Location therefore remains `applicable-migration-required`. This governance reconciliation does **not** relabel the existing V1.3 implementation as V1.4 or V1.4.1 and does not reuse V1.3 application evidence as current-target acceptance.
+Live shared authority verified 2026-09-27 from `GoreeCloud/glaze-ui`:
 
-## Historical source boundary
+- official product: **GLAZE UI V1.6**
+- approved consumer target: `1.6.0`
+- lifecycle: Anchor (the compatibility registry retains `status: stable`)
+- tag: `v1.6.0`
+- source qualification anchor: `c7509c79256b04b0aa67cb9dd0737d7588e0ae4a`
+- accepted release source: `a7180679ea851389e0f3004515f9a25f420e716d`
+- accepted release tree: `9ff0bf7a5f9d64f109d99bf4b76b81bd2a162268`
+- shared web material entrypoint: `css/glaze-v1.4.1.css`
+- shared runtime entrypoint: `js/glaze-v1.6.0.mjs`
+- immediate known-good rollback runtime: `1.5.1`
 
-Location previously carried Development source markers and migration work for pre-reset Glaze lines, including `2.0.0` and later V1.1/V1.3 reconciliation work. Those records remain historical exact-revision evidence. They are not current consumer authority and must not be reinterpreted as V1.4.1 acceptance.
+V1.6 advances shared runtime/capability behavior while preserving the accepted V1.4.1 web material baseline. Location must therefore evaluate applicable V1.5/V1.6 runtime behavior rather than treating a stylesheet filename or version marker as the complete design contract.
 
-The active implementation still uses the repository-local V1.3 source layer while the next source tranche is prepared. CI must continue to fail closed on accidental removal or relabeling of that implemented V1.3 source until a separately reviewed V1.4.1 migration actually changes the application bytes.
+## Implemented Location mapping
 
-## Current V1.3 web mapping
+The current V1.3 source layer remains real Development implementation and provides:
 
-The implemented V1.3 layer:
+- neutral structure with Deep Teal identity and restrained Soft Amber counter-light;
+- 48 px minimum human-reachability targets;
+- explicit keyboard focus treatment;
+- Light, Dark, and explicit Deep Dark structural modes;
+- bounded frosted surfaces without nested blur escalation;
+- Reduced Transparency and Reduced Motion fallbacks;
+- forced-colors fallback; and
+- separation between presentation and Location collection/history/authorization truth.
 
-- keeps neutral structure dominant;
-- uses Deep Teal as the primary Location identity with Soft Amber as restrained secondary counter-light;
-- preserves the frosted/neutral foundation inherited by V1.3 rather than introducing decorative glass everywhere;
-- preserves expressive shape hierarchy through bounded control/container/hero radii;
-- preserves a 48px minimum human-reachability target for buttons, controls, navigation items, and role-based interactive surfaces;
-- provides explicit keyboard focus treatment;
-- implements Light and Dark system appearance plus an explicit Deep Dark structural mode;
-- removes backdrop-dependent effects for Reduced Transparency;
-- suppresses nonessential motion for Reduced Motion;
-- removes custom atmosphere and defers color behavior to the platform in forced-colors mode;
-- keeps nested backdrop-blur stacks out of the composition; and
-- does not manufacture dynamic-color, contextual-intelligence, optical-engine, personalization, or adaptive-navigation acceptance that has not been separately implemented and tested for Location.
+Those properties remain useful. They are not V1.6 conformance evidence.
 
-## Required V1.4.1 source migration boundary
+## V1.6 migration requirements
 
-The next Location design-system source tranche must independently map the current Stable V1.4.1 contract, including the applicable V1.4 Optical Intelligence and V1.4.1 hardening boundaries, without weakening Location privacy or accessibility controls. It must preserve the rule that Location data, Timeline content, device state, Find My state, privacy/security/recovery state, and authorization evidence cannot become uncontrolled optical-context inputs.
+A substantive Location migration must map the current shared Glaze contract without turning sensitive location context into an uncontrolled presentation input. At minimum it must:
 
-A future migration must produce fresh repository-local build/render/accessibility/adaptive/device/performance evidence. Shared Glaze V1.4.1 qualification is not Location-specific acceptance.
+1. integrate applicable V1.6 runtime/capability behavior through a repository-controlled, auditable boundary;
+2. preserve owner/device authorization, tracking pause/resume, Timeline truth, Find My state, sharing/geofence permissions, retention/deletion, and device-credential authority;
+3. keep precise coordinates, private routes, Timeline content, device state, privacy/security/recovery evidence, and policy decisions out of decorative/contextual signals unless an approved purpose explicitly permits the specific use;
+4. preserve Reduced Motion, Reduced Transparency, forced-colors, keyboard and assistive-technology semantics, 200% text/reflow, safe-area, and responsive behavior;
+5. avoid implying live/current state when a location sample is stale, unavailable, approximate, or permission-gated; and
+6. produce fresh Location-specific rendered, accessibility, phone/tablet/desktop, representative-device, performance, battery, rollback, and Human Visual Excellence evidence.
 
 ## Location authority boundary
 
-GLAZE UI governs presentation only. This migration program does not change or manufacture:
+GLAZE UI governs presentation only. It does not create or modify:
 
-- device/user location collection;
-- personal Timeline/history truth;
+- device/user location collection authority;
+- Timeline/history truth;
 - tracking pause/resume authority;
-- Find My device/recovery truth;
+- Find My device or recovery truth;
 - sharing or geofence authorization;
 - retention/deletion policy;
-- Privacy Shield privacy decisions;
+- Privacy Shield decisions;
 - Wardveil Security findings;
 - Everkeep continuity state;
 - GoreeCloud Identity authorization;
-- GoreeCloud Mesh coordination; or
-- GoreeCloud Sync dataset, change/version, conflict, replication, offline-resume, or cross-device continuity authority.
+- GoreeCloud Policy decisions;
+- GoreeCloud Observability health truth; or
+- GoreeCloud Sync dataset/version/conflict/replication authority.
 
-The existing Timeline screen privacy mode remains a presentation-only shoulder-surfing control and is not promoted into a retention/deletion or OS screen-protection claim.
+The Timeline screen privacy control remains a presentation-only shoulder-surfing mitigation and is not a substitute for deletion, retention, OS screen protection, or Privacy Shield policy.
 
-## Platform and Sync boundary
+## Platform Contract boundary
 
-Location evaluates exactly seven Integral Platform Systems under Contract 0.2: GoreeCloud Manager, Privacy Shield, Wardveil Security, Everkeep, Glaze UI, GoreeCloud Mesh, and GoreeCloud Identity. GoreeCloud Sync remains separately governed because Location's cross-device continuity needs a real authorized Sync dataset, change/version model, conflict behavior, replication/offline-resume behavior, and runtime acceptance. Removing Sync from `platform_systems` does not waive or discard those obligations.
+The candidate adopts **Platform Contract 2.0** and explicitly evaluates all nine Integral Platform Systems. It is classified as `forge`, with `blocked` and `migration-required` flags, Development deployment state, and qualification not started.
+
+GoreeCloud Policy and GoreeCloud Observability are explicit applicable-but-blocked systems. GoreeCloud Sync remains separately governed and is not a tenth Integral Platform System.
 
 ## Acceptance still required
 
-Location still requires, as applicable, a real V1.4.1 source migration plus strict type-check/build evidence, representative rendered review, Human Visual Excellence, keyboard/screen-reader accessibility, 200% text and responsive reflow, RTL/localization, Reduced Motion/Transparency, contrast/high-contrast/forced-colors behavior, representative phone/tablet/desktop and browser/platform performance, rollback, production provider, Identity, Privacy Shield, Wardveil, Everkeep, Mesh, separately governed Sync, deployment, release, and production approval evidence.
+Before Location can reach Anchor, the exact candidate must satisfy every applicable API/database isolation, Android, rendered Glaze UI, accessibility, supported-platform, privacy, security, anti-abuse/anti-stalking, Identity, Policy, Observability, continuity, Sync, provider, deployment, rollback, release, and production acceptance gate. Passing source CI or the Platform Contract validator alone does not establish those outcomes.
