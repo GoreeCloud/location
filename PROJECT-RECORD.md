@@ -1,7 +1,8 @@
 # GoreeCloud Location — Project Record
 
 **Repository:** `GoreeCloud/location`  
-**Lifecycle:** Development  
+**Lifecycle:** Forge  
+**Deployment state:** Development  
 **Record purpose:** Significant project history, architecture and governance transitions, migration evidence, and acceptance evidence  
 **Canonical authority:** This file is the repository-local project record once accepted on the default branch.  
 **Migration source:** `Project Specification — Location.docx`, Drive file `131KmxfjQM4gFq4XXunJFECfEY623c_Ox`, v0.4.
@@ -30,6 +31,12 @@ The repository contains `IMPLEMENTED-FEATURES.md`, `PLANNED-FEATURES.md`, and `C
 
 Project requirements belong in `PROJECT-SPECIFICATIONS.md`; significant project history belongs here; implemented and planned feature dispositions remain in their dedicated repository-native records.
 
+## 2026-09-27 — Current governance authority reconciled
+
+The documentation migration was reconciled to current GoreeCloud authority before promotion: lifecycle is Forge with Development deployment state; Platform Contract 2.0 evaluates nine Integral Platform Systems; the current approved Glaze target is V1.6 / 1.6.0; and draft PR #49 is recorded as the separate current stabilization candidate rather than accepted-main behavior.
+
+The repository baseline now preserves `SPECIFICATIONS.md` as an implementation-focused companion while `PROJECT-SPECIFICATIONS.md` and `PROJECT-RECORD.md` become canonical project authority after merge. Root privacy, security, notes, editor-configuration, and repository-governance validation records were added as part of the same migration hardening.
+
 ## 2026-09-27 — Project specification migration staged
 
 A documentation-only migration branch, `docs/project-governance-migration-20260927`, was created from authoritative `main`.
@@ -41,10 +48,10 @@ The migration:
 - migrates the complete verified Drive DOCX v0.4 specification;
 - reconciles the historical repository name `GoreeCloud/goreecloud-location` to the live repository `GoreeCloud/location`;
 - updates repository navigation and authority wording;
-- retires the competing root `SPECIFICATIONS.md` on the migration branch; and
+- retains `SPECIFICATIONS.md` as a non-competing implementation-focused companion;
 - preserves the Drive source only as a frozen migration input until accepted-main readback permits permanent removal.
 
-The migration does not promote any unmerged implementation candidate, change the application lifecycle, establish production deployment, or satisfy release/Stable acceptance gates.
+The migration does not promote any unmerged implementation candidate, establish production deployment, or satisfy release/Anchor acceptance gates.
 
 ## Drive removal and archive boundary
 
