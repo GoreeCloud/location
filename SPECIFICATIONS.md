@@ -13,7 +13,7 @@ This file is the implementation-focused repository companion to the canonical pr
 
 The accepted repository baseline contains a Go API, PostgreSQL/PostGIS persistence with multi-user/device isolation tests, device enrollment/revocation, device-scoped credentials, tracking pause enforcement, authenticated location ingestion, owner-scoped live/history reads, bounded Timeline deletion/export behavior, Development Find My device state/recovery gating, and native Android collection/retry foundations.
 
-Draft PR #49 is the current clean stabilization candidate for Timeline ordering/accuracy/scope/privacy improvements, Platform Contract 2.0, and the repository-local GLAZE UI V1.6 / 1.6.0 source mapping. Those changes remain candidate-only until protected promotion.
+The current clean stabilization candidate contains the Timeline ordering/accuracy/scope/privacy improvements, Platform Contract 2.0 declaration, and repository-local GLAZE UI V1.6 / 1.6.0 source mapping. Those changes remain candidate-only until protected promotion.
 
 ## Authority boundaries
 
