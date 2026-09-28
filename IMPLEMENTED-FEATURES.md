@@ -1,32 +1,39 @@
 # GoreeCloud Location — Implemented Features
 
-> **Authority:** Repository-native implemented-feature record, seeded from the existing `FEATURES.md`. Existing Development/Partial/Planned boundaries remain controlling.
+**Authority:** Repository-native implemented-feature record.  
+**Lifecycle:** Forge  
+**Deployment state:** Development
 
-## GoreeCloud Location — Features
+This file distinguishes accepted repository behavior from unmerged candidate work. Candidate source is not accepted-main, deployment, release, production, or Anchor evidence.
 
-## Implemented in Development source
+## Accepted Development foundation
 
-- Authenticated user identity and device enrollment/revocation.
-- Device-scoped tracking credentials.
-- PostgreSQL/PostGIS geospatial persistence.
+- Go HTTP service with authenticated user and device boundaries.
+- PostgreSQL/PostGIS persistence with tested multi-user ownership isolation.
+- Device enrollment, revocation, device-scoped credentials, and server-enforced tracking pause.
 - Device-authenticated location ingestion with idempotency and bounded validation.
-- Owner-scoped live and history reads.
-- Tracking pause/resume enforced by the service.
-- Responsive Live web experience with last-known state, age, accuracy, battery, stale/no-location states, and refresh.
-- Owner-scoped Timeline view with device and bounded time-window filters and a maximum 50-sample browser view.
-- Explicitly confirmed Timeline history deletion using one server-bounded batch of up to 500 matching owner-scoped samples; the browser never auto-repeats deletion.
-- Local CSV export of only the currently loaded bounded Timeline view with spreadsheet-formula hardening and no export-time history request.
-- Local GeoJSON export of that same bounded view as independent Point features; no route, trip, stop, or movement inference is added by the client.
-- Development Find My device surface with search, Live/Recent/Stale/Offline/Unavailable presentation, diagnostics, and recovery-action gating.
+- Owner-scoped live and historical location reads.
+- Responsive Live web experience with last-known state, age, accuracy, optional battery, stale/no-location states, and refresh.
+- Owner-scoped Timeline queries with bounded device/time filters.
+- Explicitly confirmed owner-scoped Timeline deletion using a server-bounded batch.
+- Local CSV and GeoJSON export of the currently loaded bounded Timeline view.
+- Development Find My device-state surface with Live/Recent/Stale/Offline/Unavailable presentation and server-authoritative recovery-action gating.
 - Native Android collection/retry foundations.
 
-## Planned / incomplete
+## Current stabilization candidate — PR #49
 
-- Production GoreeCloud Identity browser sessions.
-- Replaceable geographic map tiles/provider integration and rendered map acceptance.
-- Multi-user/family sharing and revocation workflows.
-- Places, trips, timeline playback, geofences, and insights.
-- Offline Find My Network, nearby finding, trusted places, recovery contacts, and theft-protection correlation.
-- Complete anti-stalking and abuse-prevention protections.
-- Broader open-format import, retention policy management, backup/restore, and production monitoring.
-- Stable Glaze UI 2.0+ rendered acceptance across supported clients.
+Draft PR #49 adds or consolidates:
+
+- deterministic Timeline newest/oldest ordering;
+- reported-accuracy presentation filtering;
+- filtered visible-view summaries and explicit loaded/visible/hidden scope truth;
+- filter reset with focus restoration;
+- presentation-only Timeline screen privacy that hides precise coordinate text, disables coordinate copy, and pauses coordinate-bearing export while active;
+- repository-local GLAZE UI V1.6 / 1.6.0 source mapping with protected semantic surfaces, accessibility-profile fallbacks, input-mode adaptation, Reduced Motion/Transparency, forced-colors behavior, and bounded performance fallback;
+- Platform Contract 2.0 exact-head validation with nine Integral Platform Systems.
+
+These remain candidate-only until protected promotion.
+
+## Evidence boundary
+
+Accepted or candidate source does not establish production Identity, production geographic providers, reliable physical-device background collection, Find My recovery authority, sharing, anti-stalking acceptance, complete backup/restore, deployment, release, or Anchor qualification.

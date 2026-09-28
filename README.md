@@ -4,11 +4,21 @@ GoreeCloud Location is GoreeCloud's privacy-first, first-party location applicat
 
 ## Status
 
-**Development — not production-ready.**
+**Forge / Development — not production-ready or Anchor-qualified.**
 
-The repository currently contains a validated Development PostgreSQL/PostGIS runtime, authenticated multi-user/device foundations, native device-authenticated sample ingestion, owner-scoped history/live reads, a Glaze UI 2.0 web experience, server-enforced tracking pause/resume, an owner-scoped **Timeline surface with bounded filtering, explicit deletion controls, and local CSV/GeoJSON export**, an owner-scoped **Find My device-state surface**, and an owner-scoped **Find My recovery-capability gate**.
+The accepted repository baseline contains a validated PostgreSQL/PostGIS runtime, authenticated multi-user/device foundations, native device-authenticated sample ingestion, owner-scoped history/live reads, server-enforced tracking pause/resume, a bounded Timeline surface with deletion/export controls, a Development Find My device-state surface, and a server-authoritative recovery-capability gate. Draft PR #49 is the current clean stabilization candidate and adds the consolidated Timeline ordering/accuracy/scope/privacy work, Platform Contract 2.0 governance, and a repository-local GLAZE UI V1.6 / 1.6.0 source mapping.
 
-Source/CI validation does not establish production deployment, production identity, geographic map delivery, background tracking acceptance, recovery command authority, anti-stalking acceptance, release, or Stable qualification.
+Source/CI validation does not establish production deployment, production identity, geographic map delivery, background tracking acceptance, recovery command authority, anti-stalking acceptance, release, or Anchor qualification.
+
+## Project authority
+
+- [PROJECT-SPECIFICATIONS.md](PROJECT-SPECIFICATIONS.md) — authoritative project requirements, architecture, privacy/security obligations, accepted scope, and lifecycle gates.
+- [PROJECT-RECORD.md](PROJECT-RECORD.md) — significant project history, governance transitions, migration evidence, and dated acceptance evidence.
+- [IMPLEMENTED-FEATURES.md](IMPLEMENTED-FEATURES.md) — evidence-backed implemented capability inventory.
+- [PLANNED-FEATURES.md](PLANNED-FEATURES.md) — open, planned, partial, blocked, and acceptance-gated feature work.
+- [CHANGELOGS.md](CHANGELOGS.md) — repository and release-oriented change history.
+
+Project specifications are maintained in GitHub. The former Google Drive specification is a frozen migration source only and is not a parallel project authority.
 
 ## Governing principles
 
@@ -22,7 +32,7 @@ Source/CI validation does not establish production deployment, production identi
 - No advertising, behavioral advertising, or sale of location data is permitted.
 - Mapping, geocoding, and routing dependencies must remain replaceable.
 - Data must remain exportable through documented accepted formats when portability features are implemented.
-- Find My Stable qualification requires dedicated privacy, recovery, abuse-prevention, security, continuity, and anti-stalking acceptance.
+- Find My Anchor qualification requires dedicated privacy, recovery, abuse-prevention, security, continuity, and anti-stalking acceptance.
 
 ## Current architecture
 
@@ -43,7 +53,7 @@ Ingestion   History/Live    Find My capability state
 
 Current implementation direction:
 
-- **Web:** TypeScript with Glaze UI 2.0 source targets.
+- **Web:** TypeScript. Current approved target is GLAZE UI V1.6 / 1.6.0; draft PR #49 contains the current repository-local V1.6 source mapping, which remains candidate-only until promotion.
 - **API/services:** Go.
 - **Android:** native Kotlin direction/current foundation where implemented.
 - **Database:** PostgreSQL + PostGIS.
@@ -98,12 +108,19 @@ The ingestion path validates bounded sample data, derives ownership from the dev
 
 ## Security, privacy, and platform systems
 
-- **Privacy Shield / Privacy Center:** privacy, consent, minimization, retention/user control, sharing, and location-sensitive data governance.
-- **Wardveil Security / Security Center:** applicable protection, trust, verification, anti-abuse, recovery-security, and response controls.
-- **Everkeep / Continuity Center:** accepted export, backup, recovery, preservation, portability, and succession.
-- **GoreeCloud Identity / Identity Center:** production user/device/account/session authority.
-- **GoreeCloud Mesh / Mesh Center:** authenticated policy-controlled cross-service coordination.
-- **Glaze UI / Design Center:** approved interface/design-system governance.
+Platform Contract 2.0 evaluates exactly nine Integral Platform Systems:
+
+- **GoreeCloud Manager** — lifecycle, administration, inventory, operational control, approvals, remediation, and management-plane visibility.
+- **Privacy Shield** — privacy, consent/permission, minimization, retention, sharing, tracking privacy, and disclosure controls.
+- **Wardveil Security** — protection, trust, anti-abuse, anti-stalking, recovery-security, threat handling, and response evidence.
+- **Everkeep** — export, backup, restore, recovery, preservation, portability, migration readiness, and succession.
+- **Glaze UI** — presentation, accessibility, adaptive behavior, status/evidence presentation, and resilience.
+- **GoreeCloud Mesh** — governed first-party coordination, dependency awareness, events, and evidence routing.
+- **GoreeCloud Identity** — production user/device/account/session and credential authority.
+- **GoreeCloud Policy** — policy representation, evaluation, decisions, precedence, enforcement coordination, explanation, freshness, and evidence.
+- **GoreeCloud Observability** — health, metrics, logs/events/traces, diagnostics, dependency health, correlation, freshness, and collection-gap truth.
+
+GoreeCloud Sync remains separately governed and is not a tenth Integral Platform System.
 
 Passing source tests does not constitute production acceptance of these systems.
 
@@ -120,12 +137,13 @@ Still incomplete or separately gated:
 - production Find My recovery commands and offline/nearby finding;
 - anti-stalking runtime acceptance;
 - full portability/backup/restore acceptance;
-- production deployment, signed release, and Stable qualification.
+- production deployment, signed release, and Anchor qualification.
 
 ## Documentation
 
 - [USER-MANUAL.md](USER-MANUAL.md)
-- [SPECIFICATIONS.md](SPECIFICATIONS.md)
+- [PROJECT-SPECIFICATIONS.md](PROJECT-SPECIFICATIONS.md)
+- [PROJECT-RECORD.md](PROJECT-RECORD.md)
 - [FEATURES.md](FEATURES.md)
 - [BENEFITS.md](BENEFITS.md)
 - [COMPETITIVE-OBJECTIVES.md](COMPETITIVE-OBJECTIVES.md)

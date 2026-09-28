@@ -1,0 +1,32 @@
+name: Repository Governance
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  LOCATION_SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  validate-repository-governance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out exact Location source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.LOCATION_SOURCE_REVISION }}
+          persist-credentials: false
+
+      - name: Verify exact Location source revision
+        run: test "$(git rev-parse HEAD)" = "$LOCATION_SOURCE_REVISION"
+
+      - name: Validate mandatory Location repository records
+        run: python3 scripts/validate_repository_governance.py

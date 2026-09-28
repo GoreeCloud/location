@@ -1,44 +1,42 @@
 # GoreeCloud Location — Repository Specifications
 
-Status: Development  
-Canonical project record: `GoreeCloud/Projects/Project Specification — Location`  
-Repository: `GoreeCloud/goreecloud-location`
+**Lifecycle:** Forge  
+**Deployment state:** Development  
+**Platform Contract:** 2.0  
+**Canonical project specification:** [PROJECT-SPECIFICATIONS.md](PROJECT-SPECIFICATIONS.md)  
+**Project history:** [PROJECT-RECORD.md](PROJECT-RECORD.md)  
+**Repository:** `GoreeCloud/location`
 
-## Product boundary
+This file is the implementation-focused repository companion to the canonical project specification. It must not compete with `PROJECT-SPECIFICATIONS.md`.
 
-GoreeCloud Location is the first-party GoreeCloud location platform for owner-scoped location history, live device tracking, Find My, sharing, places, geofencing, trips, and related recovery workflows. It is a native GoreeCloud application/service, not a permanent fork of another location product.
+## Accepted implementation boundary
 
-## Current implemented foundation
+The accepted repository baseline contains a Go API, PostgreSQL/PostGIS persistence with multi-user/device isolation tests, device enrollment/revocation, device-scoped credentials, tracking pause enforcement, authenticated location ingestion, owner-scoped live/history reads, bounded Timeline deletion/export behavior, Development Find My device state/recovery gating, and native Android collection/retry foundations.
 
-- Go HTTP service with authenticated user and device boundaries.
-- PostgreSQL/PostGIS persistence and tested multi-user ownership isolation.
-- Device enrollment, revocation, device-scoped credentials, and tracking pause enforcement.
-- Device-authenticated location ingestion with idempotency and validation.
-- Owner-scoped live and historical location reads.
-- TypeScript web Live surface and Development Find My device/recovery-state surface.
-- Native Android collector/retry foundations present in the repository.
+Draft PR #49 is the current clean stabilization candidate for Timeline ordering/accuracy/scope/privacy improvements, Platform Contract 2.0, and the repository-local GLAZE UI V1.6 / 1.6.0 source mapping. Those changes remain candidate-only until protected promotion.
 
-## Required platform integration
+## Authority boundaries
 
-Applicable surfaces must integrate the current approved GoreeCloud platform systems, including GoreeCloud Identity, Privacy Shield, Wardveil Security, Everkeep, GoreeCloud Mesh, and Glaze UI. The current UI design target is Glaze UI 2.0.0 Stable or newer. Rendered conformance is an acceptance gate and is not implied by source labels alone.
+GoreeCloud Location owns approved current-position services, tracking, personal location history, device location state, Find My, geofences, and location-sharing policy. GoreeCloud Maps may consume approved Location capabilities but must not become a second tracking/history authority.
 
-## Privacy and security requirements
+Precise location is private by default. Ownership derives from authenticated user/device state, never request-supplied user IDs. Tracking pause and credential revocation are server-enforced.
 
-- Precise location is private by default.
-- Authorization must derive ownership from authenticated identity/device state, never request-supplied user IDs.
-- Tracking pause and device revocation are server-enforced.
-- Raw precise coordinates must not be written to ordinary application logs.
-- Sharing must be explicit, scoped, revocable, and separately controllable for live/history access.
-- Find My recovery and offline-finding features require anti-stalking, abuse-prevention, cryptographic, Privacy Shield, Wardveil, and Everkeep acceptance before Stable promotion.
+## Platform requirements
 
-## Current acceptance boundary
+Platform Contract 2.0 evaluates exactly nine Integral Platform Systems: Manager, Privacy Shield, Wardveil Security, Everkeep, Glaze UI, Mesh, Identity, Policy, and Observability.
 
-The repository remains Development. Passing source/build/database tests does not establish production deployment, rendered browser acceptance, production Identity integration, anti-stalking acceptance, geographic map-provider deployment, sharing acceptance, or production readiness.
+GoreeCloud Sync remains separately governed and is not a tenth Integral Platform System.
 
-## Next engineering priorities
+The current approved presentation target is GLAZE UI V1.6 / 1.6.0. Application-specific rendered/accessibility, representative-device, performance, battery, rollback, and Human Visual Excellence acceptance remains separately required.
 
-1. Complete rendered Glaze UI 2.0 acceptance for Live/Find My surfaces.
-2. Complete browser-session integration with GoreeCloud Identity.
-3. Add replaceable geographic map-provider integration without weakening privacy boundaries.
-4. Continue native Android collection/offline synchronization acceptance.
-5. Implement sharing, retention, export, recovery, anti-stalking, and production security gates.
+## Data and recovery
+
+PostgreSQL/PostGIS is the first-party authoritative geospatial state foundation. Export, deletion, retention, backup, restore, preservation, migration, and clean-environment recovery must preserve ownership/authorization and must not resurrect deleted/expired data or revoked credentials.
+
+## Provider boundary
+
+Geographic map rendering, geocoding, and routing remain replaceable dependencies. Production provider acceptance requires licensing/provenance, privacy/security, network/egress, quality, attribution, reliability, monitoring, degradation, and rollback evidence.
+
+## Acceptance boundary
+
+Passing source, build, API, database, web, or Android checks proves only those checks. It does not establish production deployment, background tracking reliability, geographic-provider acceptance, production Identity, anti-stalking acceptance, Find My recovery authority, platform-system completeness, release, or Anchor qualification.
