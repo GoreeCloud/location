@@ -2,8 +2,13 @@ package com.goreecloud.location
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-/** Prevents overlapping queue flushes without inspecting or copying queued sample data. */
-class SingleFlightSyncGate {
+/**
+ * Process-wide gate preventing overlapping queue flushes from the foreground collector,
+ * JobScheduler retry path, and user-triggered manual sync.
+ *
+ * The gate contains no sample data and does not transfer queue or credential authority.
+ */
+object SingleFlightSyncGate {
     private val running = AtomicBoolean(false)
 
     fun tryEnter(): Boolean = running.compareAndSet(false, true)
