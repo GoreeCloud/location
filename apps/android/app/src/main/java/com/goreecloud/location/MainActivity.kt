@@ -218,7 +218,14 @@ class MainActivity : Activity() {
             try {
                 val api = LocationApiClient(this)
                 api.saveBaseUrl(apiUrlInput.text.toString())
-                val result = api.syncPending(EncryptedSampleQueue(this))
+                val result = SingleFlightSyncGate.runIfAvailable {
+                    api.syncPending(EncryptedSampleQueue(this))
+                }
+                if (result == null) {
+                    runOnUiThread { renderState("A protected queue sync is already in progress.") }
+                    return@execute
+                }
+                RetryJobService.schedule(this, SyncRetryPolicy.classifyState(result.state), 0)
                 runOnUiThread { renderState("Sync state: ${result.state}; uploaded ${result.uploaded}; ${result.remaining} remain encrypted.") }
             } catch (error: Exception) {
                 runOnUiThread { renderState("Sync failed: ${safeError(error)}") }

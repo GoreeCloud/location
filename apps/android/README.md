@@ -21,7 +21,11 @@ The Android client now provides:
 - device-authenticated synchronization to `POST /api/v1/locations`;
 - acknowledgement-based queue removal only after HTTP 200/201 success;
 - preservation of encrypted pending samples across offline/server failures;
-- explicit handling for tracking-paused/conflict responses and revoked device authentication;
+- network-constrained JobScheduler retry persisted across reboot;
+- bounded 30-second to 30-minute exponential backoff;
+- a process-wide single-flight gate shared by foreground, scheduled, and manual queue flushes;
+- explicit server tracking-pause handling that stops local collection;
+- explicit handling for conflicts and revoked device authentication;
 - HTTPS enforcement for non-local endpoints; and
 - local cleartext networking limited to Android emulator/localhost development hosts.
 
@@ -39,12 +43,16 @@ Each location observation receives a UUID `client_sample_id` before it is encryp
 
 Synchronization:
 
-1. loads the protected device credential;
-2. decrypts queued samples only inside the application process as needed for upload;
-3. sends samples to `/api/v1/locations` using the device bearer credential;
-4. removes a queue record only after a successful 200/201 response;
-5. leaves records encrypted when the network is unavailable or the server rejects a transient operation;
-6. clears a revoked/unauthorized device credential after HTTP 401 so tracking cannot continue under invalid authority.
+1. persists a network-constrained retry fallback for queued work before the immediate flush;
+2. loads the protected device credential;
+3. decrypts queued samples only inside the application process as needed for upload;
+4. serializes foreground, scheduled, and manual flushes through one process-wide single-flight gate;
+5. sends samples to `/api/v1/locations` using the device bearer credential;
+6. removes a queue record only after a successful 200/201 response;
+7. leaves records encrypted when the network is unavailable or the server rejects a transient operation;
+8. uses bounded persisted exponential backoff for retryable failure;
+9. clears a revoked/unauthorized device credential after HTTP 401 so tracking cannot continue under invalid authority; and
+10. stops local collection when the server reports `tracking_paused`, preserving server privacy authority.
 
 ## Privacy and safety boundary
 
@@ -54,4 +62,4 @@ The current enrollment screen is a development bridge until GoreeCloud Identity 
 
 ## Next work
 
-Remaining Milestone 2 Android work includes adaptive battery profiles, scheduled/network-triggered retry, richer sync diagnostics, process/boot recovery within Android policy, retention limits for the encrypted queue, device enrollment through GoreeCloud Identity, and supported-device acceptance testing.
+Remaining Milestone 2 Android work is now concentrated in representative physical-device validation, process-kill/reboot/Doze and connectivity-restoration testing, long-duration battery/thermal evidence, permission and re-enrollment recovery, expanded encrypted-queue recovery testing, device enrollment through GoreeCloud Identity, and production platform-system acceptance.

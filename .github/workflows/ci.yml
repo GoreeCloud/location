@@ -233,5 +233,5 @@ jobs:
         with:
           gradle-version: "9.5.0"
 
-      - name: Build debug Android collector
-        run: gradle --no-daemon :app:assembleDebug
+      - name: Test and build debug Android collector
+        run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug

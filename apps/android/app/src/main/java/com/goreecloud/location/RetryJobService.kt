@@ -34,29 +34,34 @@ class RetryJobService : JobService() {
             }
 
             val result = try {
-                LocationApiClient(this).syncPending(queue)
+                SingleFlightSyncGate.runIfAvailable {
+                    LocationApiClient(this).syncPending(queue)
+                }
             } catch (_: Exception) {
                 schedule(this, SyncOutcome.TRANSIENT_SERVER_FAILURE, attempt + 1)
                 jobFinished(params, false)
                 return@execute
             }
 
-            val outcome = when {
-                result.state == "ok" -> SyncOutcome.SUCCESS
-                result.state == "offline" -> SyncOutcome.OFFLINE
-                result.state == "device_auth_required" || result.state == "not_enrolled" ->
-                    SyncOutcome.AUTHENTICATION_REVOKED
-                result.state.startsWith("server_5") -> SyncOutcome.TRANSIENT_SERVER_FAILURE
-                else -> SyncOutcome.MALFORMED_LOCAL_RECORD
+            if (result == null) {
+                // Another in-process path owns the queue flush. Ask JobScheduler to retry
+                // rather than racing the same encrypted records concurrently.
+                jobFinished(params, true)
+                return@execute
             }
 
+            val outcome = SyncRetryPolicy.classifyState(result.state)
             schedule(this, outcome, attempt + 1)
             jobFinished(params, false)
         }
         return true
     }
 
-    override fun onStopJob(params: JobParameters): Boolean = false
+    override fun onStopJob(params: JobParameters): Boolean =
+        runCatching {
+            ProtectedCredentialStore.load(this) != null &&
+                EncryptedSampleQueue(this).pendingCount() > 0
+        }.getOrDefault(false)
 
     override fun onDestroy() {
         executor.shutdown()
@@ -85,6 +90,7 @@ class RetryJobService : JobService() {
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .setMinimumLatency(decision.delayMs)
                 .setBackoffCriteria(decision.delayMs, JobInfo.BACKOFF_POLICY_EXPONENTIAL)
+                .setPersisted(true)
                 .setExtras(extras)
                 .build()
             scheduler.schedule(job)

@@ -8,6 +8,7 @@ package com.goreecloud.location
  * retry should be deferred. The queue remains authoritative for client_sample_id identity.
  */
 enum class SyncOutcome {
+    PENDING_QUEUE,
     SUCCESS,
     OFFLINE,
     TRANSIENT_SERVER_FAILURE,
@@ -27,10 +28,21 @@ object SyncRetryPolicy {
     private const val MAX_DELAY_MS = 30 * 60_000L
     private const val MAX_EXPONENT = 6
 
+    fun classifyState(state: String): SyncOutcome = when {
+        state == "ok" -> SyncOutcome.SUCCESS
+        state == "offline" -> SyncOutcome.OFFLINE
+        state == "tracking_paused" -> SyncOutcome.TRACKING_PAUSED
+        state == "device_auth_required" || state == "not_enrolled" ->
+            SyncOutcome.AUTHENTICATION_REVOKED
+        state.startsWith("server_5") -> SyncOutcome.TRANSIENT_SERVER_FAILURE
+        else -> SyncOutcome.MALFORMED_LOCAL_RECORD
+    }
+
     fun decide(outcome: SyncOutcome, attempt: Int): RetryDecision {
         require(attempt >= 0) { "attempt must not be negative" }
 
         return when (outcome) {
+            SyncOutcome.PENDING_QUEUE -> retry("pending-queue", attempt)
             SyncOutcome.OFFLINE -> retry("offline", attempt)
             SyncOutcome.TRANSIENT_SERVER_FAILURE -> retry("transient-server-failure", attempt)
             SyncOutcome.SUCCESS -> stop("success")
@@ -41,7 +53,7 @@ object SyncRetryPolicy {
     }
 
     fun policySummary(): String =
-        "network-required exponential backoff ${BASE_DELAY_MS / 1_000L}s–${MAX_DELAY_MS / 60_000L}m; auth and malformed data fail closed"
+        "network-required persisted exponential backoff ${BASE_DELAY_MS / 1_000L}s–${MAX_DELAY_MS / 60_000L}m; pause, auth, and malformed data fail closed"
 
     private fun retry(reason: String, attempt: Int): RetryDecision {
         val exponent = attempt.coerceAtMost(MAX_EXPONENT)

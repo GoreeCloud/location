@@ -20,7 +20,6 @@ class LocationCollectorService : Service(), LocationListener {
     private lateinit var queue: EncryptedSampleQueue
     private lateinit var api: LocationApiClient
     private val syncExecutor = Executors.newSingleThreadExecutor()
-    private val syncGate = SingleFlightSyncGate()
     private var retryAttempt = 0
     private var collectionProfile: CollectionProfile? = null
 
@@ -104,6 +103,9 @@ class LocationCollectorService : Service(), LocationListener {
             queue.enqueue(sample)
             pendingSampleCount = queue.pendingCount()
             syncState = "queued"
+            // Persist a network-constrained retry intent before launching the in-process
+            // flush. A successful immediate sync cancels this fallback job.
+            RetryJobService.schedule(this, SyncOutcome.PENDING_QUEUE, retryAttempt)
             requestSync()
         } catch (_: Exception) {
             syncState = "queue_error"
@@ -114,7 +116,7 @@ class LocationCollectorService : Service(), LocationListener {
 
     private fun requestSync() {
         syncExecutor.execute {
-            syncGate.runIfAvailable {
+            SingleFlightSyncGate.runIfAvailable {
                 val result = try {
                     api.syncPending(queue)
                 } catch (_: Exception) {
@@ -127,21 +129,20 @@ class LocationCollectorService : Service(), LocationListener {
 
                 pendingSampleCount = result.remaining
                 syncState = result.state
-                val outcome = when {
-                    result.state == "ok" -> SyncOutcome.SUCCESS
-                    result.state == "offline" -> SyncOutcome.OFFLINE
-                    result.state == "device_auth_required" || result.state == "not_enrolled" ->
-                        SyncOutcome.AUTHENTICATION_REVOKED
-                    result.state.startsWith("server_5") -> SyncOutcome.TRANSIENT_SERVER_FAILURE
-                    else -> SyncOutcome.MALFORMED_LOCAL_RECORD
-                }
+                val outcome = SyncRetryPolicy.classifyState(result.state)
 
                 if (outcome == SyncOutcome.SUCCESS) retryAttempt = 0
                 RetryJobService.schedule(this, outcome, retryAttempt)
                 if (outcome == SyncOutcome.OFFLINE || outcome == SyncOutcome.TRANSIENT_SERVER_FAILURE) {
                     retryAttempt = (retryAttempt + 1).coerceAtMost(31)
                 }
-                if (outcome == SyncOutcome.AUTHENTICATION_REVOKED) stopSelf()
+                if (outcome == SyncOutcome.AUTHENTICATION_REVOKED ||
+                    outcome == SyncOutcome.TRACKING_PAUSED
+                ) {
+                    // Server authority wins: revoked credentials and an explicit tracking
+                    // pause both stop local collection instead of allowing continued sampling.
+                    stopSelf()
+                }
             }
         }
     }
