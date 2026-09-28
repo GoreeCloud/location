@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  LOCATION_SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+
 concurrency:
   group: location-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -21,8 +24,14 @@ jobs:
       run:
         working-directory: services/api
     steps:
-      - name: Check out repository
+      - name: Check out exact Location source
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.LOCATION_SOURCE_REVISION }}
+          persist-credentials: false
+
+      - name: Verify exact Location source revision
+        run: test "$(git rev-parse HEAD)" = "$LOCATION_SOURCE_REVISION"
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -84,8 +93,14 @@ jobs:
       LOCATION_DATABASE_PASSWORD: goreecloud_location_ci_only_not_secret
       LOCATION_DATABASE_SSLMODE: disable
     steps:
-      - name: Check out repository
+      - name: Check out exact Location source
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.LOCATION_SOURCE_REVISION }}
+          persist-credentials: false
+
+      - name: Verify exact Location source revision
+        run: test "$(git rev-parse HEAD)" = "$LOCATION_SOURCE_REVISION"
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -152,16 +167,32 @@ jobs:
       run:
         working-directory: apps/web
     steps:
-      - name: Check out repository
+      - name: Check out exact Location source
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.LOCATION_SOURCE_REVISION }}
+          persist-credentials: false
 
-      - name: Verify Glaze UI 2.0 source contract
+      - name: Verify exact Location source revision
+        run: test "$(git rev-parse HEAD)" = "$LOCATION_SOURCE_REVISION"
+
+      - name: Verify implemented Glaze source and current migration target
         shell: bash
         run: |
           set -euo pipefail
-          grep -F 'data-glaze-version="2.0.0"' src/main.ts > /dev/null
-          if grep -R -n -E 'Glaze UI 1\.[0-9]|data-glaze-version="1\.' src; then
-            echo "Location web source still contains a stale Glaze UI 1.x contract." >&2
+          grep -F 'data-glaze-version="1.3.0"' src/main.ts > /dev/null
+          grep -F 'src/glaze-v1-3.ts' index.html > /dev/null
+          grep -F 'fc7cc91d2eace8da2371371c2855c24cbcb326a1' src/glaze-v1-3.css > /dev/null
+          grep -F 'css/glaze-v1.3.0.css' src/glaze-v1-3.css > /dev/null
+          grep -F 'js/glaze-v1.3.0.mjs' src/glaze-v1-3.css > /dev/null
+          grep -F 'GLAZE UI V1.6 / 1.6.0' ../../docs/GLAZE_UI_ADOPTION.md > /dev/null
+          grep -F 'glaze_ui_required: "1.6.0"' ../../goreecloud.platform.yaml > /dev/null
+          if grep -R -n -E 'data-glaze-version="2\.|src/glaze-v1-1\.ts|Target: 1\.1\.0' src index.html; then
+            echo "Location web activation contains a stale pre-reset Glaze source contract." >&2
+            exit 1
+          fi
+          if grep -R -n -E 'Current (required|approved).*1\.(1|2|3|4|5)(\.|\b)' ../../docs/GLAZE_UI_ADOPTION.md ../../goreecloud.platform.yaml; then
+            echo "Location governance contains a stale current Glaze target declaration." >&2
             exit 1
           fi
 
@@ -183,8 +214,14 @@ jobs:
       run:
         working-directory: apps/android
     steps:
-      - name: Check out repository
+      - name: Check out exact Location source
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.LOCATION_SOURCE_REVISION }}
+          persist-credentials: false
+
+      - name: Verify exact Location source revision
+        run: test "$(git rev-parse HEAD)" = "$LOCATION_SOURCE_REVISION"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
