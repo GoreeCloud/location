@@ -18,7 +18,7 @@ This file is the repository-side feature roadmap control for GoreeCloud Location
 | FR-002 | Move unfinished actionable obligations into GoreeCloud Tasks Management with priority, dependency, and lifecycle disposition. | High | Ongoing control |
 | FR-003 | Do not mark features implemented, complete, cancelled, superseded, Anchor, or production-ready without authoritative evidence. | High | Ongoing control |
 | FR-004 | Consolidate the current Timeline ordering/accuracy/scope/privacy work and Glaze governance stack into one current reviewable candidate instead of maintaining a long stale stacked-PR chain. | Critical | In progress — stabilization candidate |
-| FR-005 | Migrate the implemented Location V1.3 presentation layer substantively to current GLAZE UI V1.6 / 1.6.0 and produce fresh rendered/accessibility/device/performance evidence. | High | Migration required |
+| FR-005 | Complete fresh Location rendered/accessibility/device/performance/battery acceptance for the implemented GLAZE UI V1.6 / 1.6.0 source mapping. | High | Source implemented; acceptance blocked |
 | FR-006 | Complete Platform Contract 2.0 nine-system integration work for Manager, Privacy Shield, Wardveil, Everkeep, Glaze UI, Mesh, Identity, Policy, and Observability. | Critical | Blocked / in progress |
 | FR-007 | Complete Android collector reliability: encrypted bounded queue, retry/backoff, retention, credential revocation, permission-safe recovery, battery-aware profiles, and physical-device acceptance. | Critical | In progress / blocked |
 | FR-008 | Advance Find My device surfaces with stale/offline/approximate truth, recovery gating, privacy controls, anti-abuse/anti-stalking protections, and explicit authorization. | Critical | In progress / blocked |
