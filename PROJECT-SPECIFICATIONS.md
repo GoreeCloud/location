@@ -2,7 +2,9 @@
 
 **Repository:** `GoreeCloud/location`  
 **Project type:** First-party GoreeCloud location application and service  
-**Lifecycle:** Development  
+**Lifecycle:** Forge  
+**Deployment state:** Development  
+**Platform Contract:** 2.0  
 **License:** AGPL-3.0-only  
 **Canonical authority:** This file is the authoritative project specification once accepted on the default branch.  
 **Migration source:** `Project Specification — Location.docx`, Drive file `131KmxfjQM4gFq4XXunJFECfEY623c_Ox`, v0.4, last updated September 15, 2026.  
@@ -17,52 +19,23 @@ Verified repository implementation, accepted commits, tests, CI, releases, and r
 
 The former root `SPECIFICATIONS.md` is incorporated below as the repository implementation boundary that existed on `main` when this migration branch was created. It is retired by this migration to avoid a competing canonical specification.
 
-## Current repository implementation boundary at migration
+## Current repository implementation boundary
 
-# GoreeCloud Location — Repository Specifications
+Authoritative `main` remains the accepted source baseline. The repository contains a Go HTTP service, PostgreSQL/PostGIS persistence with tested multi-user/device isolation, device enrollment/revocation and tracking-pause enforcement, authenticated location ingestion, owner-scoped live/history reads, bounded Timeline deletion/export behavior, Development Find My state/recovery gating, and native Android collection/retry foundations.
 
-Status: Development  
-Canonical project specification: `PROJECT-SPECIFICATIONS.md`  
-Repository: `GoreeCloud/location`
+The current clean stabilization candidate is draft PR #49 on `stabilization/location-current-main-20260927`. That separate candidate consolidates Timeline ordering/accuracy/scope/privacy work, migrates governance to Platform Contract 2.0, and implements a repository-local GLAZE UI V1.6 / 1.6.0 presentation adapter. Until protected promotion completes, those candidate changes must not be represented as accepted-main behavior.
 
-## Product boundary
+### Current platform and Glaze requirements
 
-GoreeCloud Location is the first-party GoreeCloud location platform for owner-scoped location history, live device tracking, Find My, sharing, places, geofencing, trips, and related recovery workflows. It is a native GoreeCloud application/service, not a permanent fork of another location product.
+Platform Contract 2.0 evaluates exactly nine Integral Platform Systems: GoreeCloud Manager, Privacy Shield, Wardveil Security, Everkeep, Glaze UI, GoreeCloud Mesh, GoreeCloud Identity, GoreeCloud Policy, and GoreeCloud Observability. GoreeCloud Sync remains separately governed and is not a tenth Integral Platform System.
 
-## Current implemented foundation
+The current approved shared presentation target is GLAZE UI V1.6 / 1.6.0. Location-specific rendered/accessibility, 200% text/reflow, RTL/localization, Reduced Motion/Transparency, forced-colors, phone/tablet/desktop, representative physical-device, performance, battery, rollback, and Human Visual Excellence acceptance remains required even after source migration.
 
-- Go HTTP service with authenticated user and device boundaries.
-- PostgreSQL/PostGIS persistence and tested multi-user ownership isolation.
-- Device enrollment, revocation, device-scoped credentials, and tracking pause enforcement.
-- Device-authenticated location ingestion with idempotency and validation.
-- Owner-scoped live and historical location reads.
-- TypeScript web Live surface and Development Find My device/recovery-state surface.
-- Native Android collector/retry foundations present in the repository.
+### Privacy and security boundary
 
-## Required platform integration
+Precise location is private by default. Ownership must derive from authenticated user/device state, never request-supplied user identifiers. Tracking pause and credential revocation are server-enforced. Sharing must be explicit, scoped, revocable, and independently controllable. Find My recovery/offline-finding requires dedicated anti-stalking, abuse-prevention, privacy, security, continuity, policy, observability, and recovery acceptance before Anchor qualification.
 
-Applicable surfaces must integrate the current approved GoreeCloud platform systems, including GoreeCloud Identity, Privacy Shield, Wardveil Security, Everkeep, GoreeCloud Mesh, and Glaze UI. The current UI design target is Glaze UI 2.0.0 Stable or newer. Rendered conformance is an acceptance gate and is not implied by source labels alone.
-
-## Privacy and security requirements
-
-- Precise location is private by default.
-- Authorization must derive ownership from authenticated identity/device state, never request-supplied user IDs.
-- Tracking pause and device revocation are server-enforced.
-- Raw precise coordinates must not be written to ordinary application logs.
-- Sharing must be explicit, scoped, revocable, and separately controllable for live/history access.
-- Find My recovery and offline-finding features require anti-stalking, abuse-prevention, cryptographic, Privacy Shield, Wardveil, and Everkeep acceptance before Stable promotion.
-
-## Current acceptance boundary
-
-The repository remains Development. Passing source/build/database tests does not establish production deployment, rendered browser acceptance, production Identity integration, anti-stalking acceptance, geographic map-provider deployment, sharing acceptance, or production readiness.
-
-## Next engineering priorities
-
-1. Complete rendered Glaze UI 2.0 acceptance for Live/Find My surfaces.
-2. Complete browser-session integration with GoreeCloud Identity.
-3. Add replaceable geographic map-provider integration without weakening privacy boundaries.
-4. Continue native Android collection/offline synchronization acceptance.
-5. Implement sharing, retention, export, recovery, anti-stalking, and production security gates.
+Source/build/database tests do not establish production deployment, geographic-provider acceptance, production Identity, background tracking acceptance, Find My recovery authority, sharing acceptance, release, or Anchor status.
 
 ## Migrated Drive project specification — v0.4
 
