@@ -78,8 +78,8 @@ platform_systems:
     version: "1.6.0"
     evidence:
       - apps/web/src/main.ts
-      - apps/web/src/glaze-v1-3.ts
-      - apps/web/src/glaze-v1-3.css
+      - apps/web/src/glaze-v1-6.ts
+      - apps/web/src/glaze-v1-6.css
       - docs/GLAZE_UI_ADOPTION.md
     notes: Location now implements a repository-local GLAZE UI V1.6 / 1.6.0 presentation adapter against the current shared source/release authority without introducing a remote runtime dependency. Glaze remains blocked because Location-specific rendered, accessibility, adaptive, representative-device, performance, battery, rollback, and Human Visual Excellence acceptance is still required.
   mesh:
