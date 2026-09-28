@@ -10,6 +10,16 @@ The repository currently contains a validated Development PostgreSQL/PostGIS run
 
 Source/CI validation does not establish production deployment, production identity, geographic map delivery, background tracking acceptance, recovery command authority, anti-stalking acceptance, release, or Stable qualification.
 
+## Project authority
+
+- [PROJECT-SPECIFICATIONS.md](PROJECT-SPECIFICATIONS.md) — authoritative project requirements, architecture, privacy/security obligations, accepted scope, and lifecycle gates.
+- [PROJECT-RECORD.md](PROJECT-RECORD.md) — significant project history, governance transitions, migration evidence, and dated acceptance evidence.
+- [IMPLEMENTED-FEATURES.md](IMPLEMENTED-FEATURES.md) — evidence-backed implemented capability inventory.
+- [PLANNED-FEATURES.md](PLANNED-FEATURES.md) — open, planned, partial, blocked, and acceptance-gated feature work.
+- [CHANGELOGS.md](CHANGELOGS.md) — repository and release-oriented change history.
+
+Project specifications are maintained in GitHub. The former Google Drive specification is a frozen migration source only and is not a parallel project authority.
+
 ## Governing principles
 
 - Location data is private by default.
@@ -125,7 +135,8 @@ Still incomplete or separately gated:
 ## Documentation
 
 - [USER-MANUAL.md](USER-MANUAL.md)
-- [SPECIFICATIONS.md](SPECIFICATIONS.md)
+- [PROJECT-SPECIFICATIONS.md](PROJECT-SPECIFICATIONS.md)
+- [PROJECT-RECORD.md](PROJECT-RECORD.md)
 - [FEATURES.md](FEATURES.md)
 - [BENEFITS.md](BENEFITS.md)
 - [COMPETITIVE-OBJECTIVES.md](COMPETITIVE-OBJECTIVES.md)
