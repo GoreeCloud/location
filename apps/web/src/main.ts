@@ -111,7 +111,7 @@ function renderSignIn(message = ""): void {
   if (refreshTimer) window.clearInterval(refreshTimer);
   app.innerHTML = `
     <main class="auth-shell">
-      <section class="auth-card" aria-labelledby="signin-title">
+      <section class="auth-card" data-glaze-semantic-surface="protected" aria-labelledby="signin-title">
         <div class="brand-lockup"><span class="brand-mark" aria-hidden="true">◎</span><span>GoreeCloud Location</span></div>
         <div class="auth-copy">
           <span class="eyebrow">Private by default</span>
@@ -222,7 +222,7 @@ async function renderApplication(): Promise<void> {
   try {
     const data = await loadDashboard();
     app.innerHTML = `
-      <div class="app-shell" data-glaze-ui="location" data-glaze-version="1.3.0">
+      <div class="app-shell" data-glaze-ui="location" data-glaze-version="1.6.0">
         <aside class="sidebar" aria-label="Location navigation">
           <a class="brand-lockup app-brand" href="#live"><span class="brand-mark" aria-hidden="true">◎</span><span>Location</span></a>
           <nav>
