@@ -25,7 +25,7 @@ GoreeCloud Location is the first-party GoreeCloud location application/service f
 
 Platform Contract 2.0 requires explicit evaluation of exactly nine Integral Platform Systems: Manager, Privacy Shield, Wardveil Security, Everkeep, Glaze UI, Mesh, Identity, Policy, and Observability. GoreeCloud Sync remains separately governed and is not a tenth Integral Platform System.
 
-The implemented web presentation is GLAZE UI V1.3 / 1.3.0. The current approved shared target is GLAZE UI V1.6 / 1.6.0. Location remains migration-required until a substantive source migration and fresh Location-specific rendered, accessibility, responsive/adaptive, representative-device, performance, rollback, and Human Visual Excellence evidence exist.
+The implemented web presentation now uses a repository-local GLAZE UI V1.6 / 1.6.0 adapter. It keeps shared Glaze authority presentation-only and preserves Location-owned state truth. Source migration is implemented; fresh Location-specific rendered, accessibility, responsive/adaptive, representative-device, performance, battery, rollback, and Human Visual Excellence evidence remains required.
 
 ## Privacy and security requirements
 
@@ -57,7 +57,7 @@ The repository remains Forge/Development. Passing source, build, API, database, 
 ## Next engineering priorities
 
 1. Consolidate and validate the current Timeline/privacy candidate on exact current-main ancestry.
-2. Migrate the Location web experience substantively to GLAZE UI V1.6.
+2. Complete rendered, accessibility, device, performance, battery, and Human Visual Excellence acceptance for the implemented GLAZE UI V1.6 source mapping.
 3. Complete Android encrypted queue/retry/retention/recovery and physical-device validation.
 4. Advance Find My state/recovery with anti-stalking and privacy/security gates.
 5. Complete production Identity, Privacy Shield, Wardveil, Everkeep, Mesh, Policy, Observability, and Sync integrations.
