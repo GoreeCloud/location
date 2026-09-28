@@ -10,7 +10,6 @@ lifecycle: forge
 lifecycle_metadata:
   flags:
     - blocked
-    - migration-required
   deployment_state: development
   qualification_state: not-started
   next_gate: weave
@@ -75,14 +74,14 @@ platform_systems:
       - USER-MANUAL.md
     notes: Bounded owner-authorized Timeline export exists, but complete account export/import, encrypted backup, clean-environment restore, migration, rollback, preservation, and production Everkeep acceptance remain incomplete.
   glaze_ui:
-    result: applicable-migration-required
-    version: "1.3.0"
+    result: applicable-blocked
+    version: "1.6.0"
     evidence:
       - apps/web/src/main.ts
       - apps/web/src/glaze-v1-3.ts
       - apps/web/src/glaze-v1-3.css
       - docs/GLAZE_UI_ADOPTION.md
-    notes: Location truthfully retains its implemented GLAZE UI V1.3 / 1.3.0 source mapping. The current approved shared target is GLAZE UI V1.6 / 1.6.0, so a substantive migration plus fresh rendered, accessibility, adaptive, representative-device, performance, rollback, and Human Visual Excellence acceptance remains required.
+    notes: Location now implements a repository-local GLAZE UI V1.6 / 1.6.0 presentation adapter against the current shared source/release authority without introducing a remote runtime dependency. Glaze remains blocked because Location-specific rendered, accessibility, adaptive, representative-device, performance, battery, rollback, and Human Visual Excellence acceptance is still required.
   mesh:
     result: applicable-blocked
     version: null
@@ -191,7 +190,7 @@ conformance:
     - docs/GLAZE_UI_ADOPTION.md
   blockers:
     - The consolidated Timeline/privacy/Glaze candidate remains review-only until protected promotion completes; source CI does not make it authoritative main behavior.
-    - GLAZE UI V1.3 / 1.3.0 remains the implemented source mapping while current approved target is V1.6 / 1.6.0; substantive migration and fresh Location-specific rendered, accessibility, adaptive, representative-device, performance, rollback, and Human Visual Excellence acceptance remain incomplete.
+    - GLAZE UI V1.6 / 1.6.0 source mapping is implemented, but fresh Location-specific rendered, accessibility, adaptive, representative-device, performance, battery, rollback, and Human Visual Excellence acceptance remains incomplete.
     - GoreeCloud Manager integration and acceptance remain incomplete.
     - Privacy Shield runtime retention, sharing, background-location, purpose/disclosure decisions, and production privacy acceptance remain incomplete.
     - Wardveil Security runtime trust evidence, anti-abuse, anti-stalking, recovery-security, and production acceptance remain incomplete.
