@@ -2,9 +2,9 @@
 
 ## Current state
 
-GoreeCloud Location is a **Forge-stage Development candidate**. The consolidated web source currently implements the repository-local **GLAZE UI V1.3 / 1.3.0 — Adaptive Resonance** mapping. The current approved shared consumer target is **GLAZE UI V1.6 / 1.6.0**, so Location remains `applicable-migration-required`.
+GoreeCloud Location is a **Forge-stage Development candidate**. The consolidated web source now implements a repository-local **GLAZE UI V1.6 / 1.6.0** presentation adapter against the current approved shared target. Glaze is now `applicable-blocked`: source migration is present, but Location-specific rendered and runtime acceptance is not complete.
 
-This record preserves the actual implemented V1.3 bytes. It does not relabel them as V1.6 and does not reuse historical source/build evidence as current-target acceptance.
+The V1.6 adapter is a substantive repository-local source change rather than a version-marker-only rewrite. It avoids a remote browser runtime dependency, preserves caller-owned Location truth, and adds protected semantic surfaces, accessibility-profile fallbacks, input-mode adaptation, reduced-motion behavior, and bounded performance degradation. Historical V1.3 source remains inactive provenance.
 
 ## Current shared authority
 
@@ -23,9 +23,9 @@ Live shared authority verified 2026-09-27 from `GoreeCloud/glaze-ui`:
 
 V1.6 advances shared runtime/capability behavior while preserving the accepted V1.4.1 web material baseline. Location must therefore evaluate applicable V1.5/V1.6 runtime behavior rather than treating a stylesheet filename or version marker as the complete design contract.
 
-## Implemented Location mapping
+## Implemented Location V1.6 mapping
 
-The current V1.3 source layer remains real Development implementation and provides:
+The active candidate now uses `apps/web/src/glaze-v1-6.ts` and `apps/web/src/glaze-v1-6.css`. The older V1.3 layer remains inactive historical provenance. The active V1.6 mapping provides:
 
 - neutral structure with Deep Teal identity and restrained Soft Amber counter-light;
 - 48 px minimum human-reachability targets;
@@ -36,11 +36,11 @@ The current V1.3 source layer remains real Development implementation and provid
 - forced-colors fallback; and
 - separation between presentation and Location collection/history/authorization truth.
 
-Those properties remain useful. They are not V1.6 conformance evidence.
+Those properties now form the current-target source mapping. They are not rendered, device, performance, or production conformance evidence.
 
-## V1.6 migration requirements
+## V1.6 acceptance requirements
 
-A substantive Location migration must map the current shared Glaze contract without turning sensitive location context into an uncontrolled presentation input. At minimum it must:
+The source migration maps the current shared Glaze contract without turning sensitive location context into an uncontrolled presentation input. Remaining acceptance must verify that it:
 
 1. integrate applicable V1.6 runtime/capability behavior through a repository-controlled, auditable boundary;
 2. preserve owner/device authorization, tracking pause/resume, Timeline truth, Find My state, sharing/geofence permissions, retention/deletion, and device-credential authority;
@@ -71,7 +71,7 @@ The Timeline screen privacy control remains a presentation-only shoulder-surfing
 
 ## Platform Contract boundary
 
-The candidate adopts **Platform Contract 2.0** and explicitly evaluates all nine Integral Platform Systems. It is classified as `forge`, with `blocked` and `migration-required` flags, Development deployment state, and qualification not started.
+The candidate adopts **Platform Contract 2.0** and explicitly evaluates all nine Integral Platform Systems. It is classified as `forge`, with a `blocked` flag, Development deployment state, and qualification not started. Glaze source is current-target V1.6 while downstream acceptance remains blocked.
 
 GoreeCloud Policy and GoreeCloud Observability are explicit applicable-but-blocked systems. GoreeCloud Sync remains separately governed and is not a tenth Integral Platform System.
 
