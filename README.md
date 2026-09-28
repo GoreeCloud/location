@@ -8,7 +8,7 @@ GoreeCloud Location is GoreeCloud's privacy-first, first-party location applicat
 
 The accepted repository baseline contains a validated PostgreSQL/PostGIS runtime, authenticated multi-user/device foundations, native device-authenticated sample ingestion, owner-scoped history/live reads, server-enforced tracking pause/resume, bounded Timeline controls, local CSV/GeoJSON export, a Development Find My surface, and recovery-capability gating.
 
-This stabilization candidate layers the current Timeline ordering, accuracy presentation, filtered-summary/scope truth, reset controls, screen privacy, and GLAZE UI V1.3 source mapping onto current `main`, while migrating repository governance to Platform Contract 2.0 and the current GLAZE UI V1.6 / 1.6.0 target.
+This stabilization candidate layers the current Timeline ordering, accuracy presentation, filtered-summary/scope truth, reset controls, screen privacy, and a repository-local GLAZE UI V1.6 / 1.6.0 presentation adapter onto current `main`, while preserving caller-owned location, privacy, security, and recovery truth.
 
 Source/CI validation does not establish production deployment, production Identity, geographic-map delivery, background tracking acceptance, recovery-command authority, anti-stalking acceptance, release, or Anchor qualification.
 
@@ -45,7 +45,7 @@ Ingestion   History/Live    Find My capability state
 
 Current implementation direction:
 
-- **Web:** TypeScript with an implemented repository-local GLAZE UI V1.3 / 1.3.0 mapping; current approved target is GLAZE UI V1.6 / 1.6.0 and migration remains required.
+- **Web:** TypeScript with an implemented repository-local GLAZE UI V1.6 / 1.6.0 presentation adapter; source migration is implemented while rendered/accessibility/device/performance acceptance remains blocked.
 - **API/services:** Go.
 - **Android:** native Kotlin direction/current foundation where implemented.
 - **Database:** PostgreSQL + PostGIS.
