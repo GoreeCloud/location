@@ -3,14 +3,13 @@
  * Target: GLAZE UI V1.6 / 1.6.0
  * Source qualification anchor: c7509c79256b04b0aa67cb9dd0737d7588e0ae4a
  * Shared web material entrypoint: css/glaze-v1.4.1.css
- * Stable runtime entrypoint: js/glaze-v1.6.0.mjs
+ * Shared runtime entrypoint: js/glaze-v1.6.0.mjs
  * Rollback runtime baseline: 1.5.1
  *
- * V1.3 inherits the verified V1.2 rendering foundation and adds adaptive
- * contracts. This Location-owned mapping preserves the compatible neutral /
- * frosted material foundation, bounded accent, expressive shape hierarchy,
- * human-reachability target floor, and accessibility-resilience fallbacks
- * required by the current Stable line. It is source mapping only; rendered,
+ * This Location-owned V1.6 mapping preserves the compatible neutral/frosted
+ * material foundation while adding current-target protected surfaces,
+ * accessibility profiles, input-mode adaptation, and bounded efficiency
+ * behavior. It is source mapping only; rendered,
  * assistive-technology, representative-device, performance, and production
  * acceptance remain independently gated.
  *
