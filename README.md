@@ -4,11 +4,13 @@ GoreeCloud Location is GoreeCloud's privacy-first, first-party location applicat
 
 ## Status
 
-**Development — not production-ready.**
+**Forge / Development — not production-ready or Anchor-qualified.**
 
-The repository currently contains a validated Development PostgreSQL/PostGIS runtime, authenticated multi-user/device foundations, native device-authenticated sample ingestion, owner-scoped history/live reads, a Glaze UI 2.0 web experience, server-enforced tracking pause/resume, an owner-scoped **Timeline surface with bounded filtering, explicit deletion controls, and local CSV/GeoJSON export**, an owner-scoped **Find My device-state surface**, and an owner-scoped **Find My recovery-capability gate**.
+The accepted repository baseline contains a validated PostgreSQL/PostGIS runtime, authenticated multi-user/device foundations, native device-authenticated sample ingestion, owner-scoped history/live reads, server-enforced tracking pause/resume, bounded Timeline controls, local CSV/GeoJSON export, a Development Find My surface, and recovery-capability gating.
 
-Source/CI validation does not establish production deployment, production identity, geographic map delivery, background tracking acceptance, recovery command authority, anti-stalking acceptance, release, or Stable qualification.
+This stabilization candidate layers the current Timeline ordering, accuracy presentation, filtered-summary/scope truth, reset controls, screen privacy, and GLAZE UI V1.3 source mapping onto current `main`, while migrating repository governance to Platform Contract 2.0 and the current GLAZE UI V1.6 / 1.6.0 target.
+
+Source/CI validation does not establish production deployment, production Identity, geographic-map delivery, background tracking acceptance, recovery-command authority, anti-stalking acceptance, release, or Anchor qualification.
 
 ## Governing principles
 
@@ -22,7 +24,7 @@ Source/CI validation does not establish production deployment, production identi
 - No advertising, behavioral advertising, or sale of location data is permitted.
 - Mapping, geocoding, and routing dependencies must remain replaceable.
 - Data must remain exportable through documented accepted formats when portability features are implemented.
-- Find My Stable qualification requires dedicated privacy, recovery, abuse-prevention, security, continuity, and anti-stalking acceptance.
+- Find My Anchor qualification requires dedicated privacy, recovery, abuse-prevention, security, continuity, and anti-stalking acceptance.
 
 ## Current architecture
 
@@ -43,7 +45,7 @@ Ingestion   History/Live    Find My capability state
 
 Current implementation direction:
 
-- **Web:** TypeScript with Glaze UI 2.0 source targets.
+- **Web:** TypeScript with an implemented repository-local GLAZE UI V1.3 / 1.3.0 mapping; current approved target is GLAZE UI V1.6 / 1.6.0 and migration remains required.
 - **API/services:** Go.
 - **Android:** native Kotlin direction/current foundation where implemented.
 - **Database:** PostgreSQL + PostGIS.
@@ -98,12 +100,19 @@ The ingestion path validates bounded sample data, derives ownership from the dev
 
 ## Security, privacy, and platform systems
 
-- **Privacy Shield / Privacy Center:** privacy, consent, minimization, retention/user control, sharing, and location-sensitive data governance.
-- **Wardveil Security / Security Center:** applicable protection, trust, verification, anti-abuse, recovery-security, and response controls.
-- **Everkeep / Continuity Center:** accepted export, backup, recovery, preservation, portability, and succession.
-- **GoreeCloud Identity / Identity Center:** production user/device/account/session authority.
-- **GoreeCloud Mesh / Mesh Center:** authenticated policy-controlled cross-service coordination.
-- **Glaze UI / Design Center:** approved interface/design-system governance.
+Platform Contract 2.0 evaluates exactly nine Integral Platform Systems:
+
+- **GoreeCloud Manager:** lifecycle, administration, inventory, operational control, approvals, remediation, and management-plane visibility.
+- **Privacy Shield:** privacy, consent/permission, minimization, retention, sharing, tracking privacy, and disclosure controls.
+- **Wardveil Security:** protection, trust, anti-abuse, anti-stalking, recovery-security, threat handling, and response evidence.
+- **Everkeep:** export, backup, restore, recovery, preservation, portability, migration readiness, and succession.
+- **Glaze UI:** presentation, accessibility, adaptive behavior, status/evidence presentation, and resilience.
+- **GoreeCloud Mesh:** governed first-party coordination, dependency awareness, events, and evidence routing.
+- **GoreeCloud Identity:** production user/device/account/session and credential authority.
+- **GoreeCloud Policy:** policy representation, evaluation, decisions, precedence, enforcement coordination, explanation, freshness, and evidence.
+- **GoreeCloud Observability:** health, metrics, logs/events/traces, diagnostics, dependency health, correlation, freshness, and collection-gap truth.
+
+GoreeCloud Sync remains separately governed and is not a tenth Integral Platform System.
 
 Passing source tests does not constitute production acceptance of these systems.
 
@@ -120,7 +129,7 @@ Still incomplete or separately gated:
 - production Find My recovery commands and offline/nearby finding;
 - anti-stalking runtime acceptance;
 - full portability/backup/restore acceptance;
-- production deployment, signed release, and Stable qualification.
+- production deployment, signed release, and Anchor qualification.
 
 ## Documentation
 
@@ -137,6 +146,8 @@ Still incomplete or separately gated:
 - [docs/find-my-development-surface.md](docs/find-my-development-surface.md)
 - [docs/security.md](docs/security.md)
 - [docs/privacy.md](docs/privacy.md)
+- [docs/GLAZE_UI_ADOPTION.md](docs/GLAZE_UI_ADOPTION.md)
+- [FEATURE-ROADMAP.md](FEATURE-ROADMAP.md)
 
 ## License
 
