@@ -26,8 +26,8 @@ Status vocabulary: **Accepted main**, **Stabilization candidate**, **Planned**, 
 - explicit loaded/visible/hidden scope truth;
 - explicit accuracy-filter reset with focus restoration;
 - presentation-only Timeline screen privacy mode that hides precise coordinate text, disables coordinate copy, and pauses coordinate-bearing export while active;
-- repository-local GLAZE UI V1.3 / 1.3.0 mapping with 48 px targets, focus treatment, Light/Dark/Deep Dark structure, Reduced Transparency, Reduced Motion, and forced-colors fallbacks;
-- current GLAZE UI V1.6 / 1.6.0 migration declaration without relabeling V1.3 source bytes;
+- repository-local GLAZE UI V1.6 / 1.6.0 mapping with protected semantic surfaces, 48 px targets, focus treatment, Light/Dark/Deep Dark structure, Reduced Transparency, Reduced Motion, forced-colors, input-mode adaptation, and bounded performance fallback;
+- current-target GLAZE UI V1.6 source activation without remote runtime dependency or transfer of Location authority;
 - exact-head CI and Platform Contract 2.0 validation;
 - explicit GoreeCloud Policy and GoreeCloud Observability blocked-state evaluation.
 
@@ -41,7 +41,7 @@ GLAZE UI is presentation only. It does not change collection, history, tracking 
 
 ## Planned / incomplete
 
-- substantive GLAZE UI V1.6 migration and Location-specific rendered/accessibility/device/performance acceptance;
+- Location-specific GLAZE UI V1.6 rendered/accessibility/device/performance/battery acceptance;
 - production GoreeCloud Identity browser/device sessions and credential lifecycle;
 - replaceable geographic map provider and rendered map acceptance;
 - Android encrypted queue, retry/backoff, retention, permission-safe recovery, battery behavior, and physical-device acceptance;
