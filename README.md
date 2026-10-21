@@ -6,7 +6,7 @@ GoreeCloud Location is GoreeCloud's privacy-first, first-party location applicat
 
 **Forge / Development — not production-ready or Anchor-qualified.**
 
-The accepted repository baseline contains a validated PostgreSQL/PostGIS runtime, authenticated multi-user/device foundations, native device-authenticated sample ingestion, owner-scoped history/live reads, server-enforced tracking pause/resume, a bounded Timeline surface with deletion/export controls, a Development Find My device-state surface, and a server-authoritative recovery-capability gate. Draft PR #49 is the current clean stabilization candidate and adds the consolidated Timeline ordering/accuracy/scope/privacy work, Platform Contract 2.0 governance, and a repository-local GLAZE UI V1.6 / 1.6.0 source mapping.
+The accepted repository baseline contains a validated PostgreSQL/PostGIS runtime, authenticated multi-user/device foundations, native device-authenticated sample ingestion, owner-scoped history/live reads, server-enforced tracking pause/resume, a bounded Timeline surface with deletion/export controls, a Development Find My device-state surface, and a server-authoritative recovery-capability gate. Draft PR #49 is a stabilization candidate covering Timeline ordering/accuracy/scope/privacy work and Platform Contract 2.0 governance. Its legacy Glaze UI V1.6 / 1.6.0 source mapping is historical migration evidence, not current design authority or verified GoreeCloud UI acceptance.
 
 Source/CI validation does not establish production deployment, production identity, geographic map delivery, background tracking acceptance, recovery command authority, anti-stalking acceptance, release, or Anchor qualification.
 
@@ -53,7 +53,7 @@ Ingestion   History/Live    Find My capability state
 
 Current implementation direction:
 
-- **Web:** TypeScript. Current approved target is GLAZE UI V1.6 / 1.6.0; draft PR #49 contains the current repository-local V1.6 source mapping, which remains candidate-only until promotion.
+- **Web:** TypeScript. The exclusive current design authority is [GoreeCloud UI](https://github.com/GoreeCloud/gc-ui); draft PR #49 retains a legacy 1.6 source mapping as candidate-only historical implementation evidence. Product-specific GoreeCloud UI migration and conformance are unverified.
 - **API/services:** Go.
 - **Android:** native Kotlin direction/current foundation where implemented.
 - **Database:** PostgreSQL + PostGIS.
@@ -114,7 +114,7 @@ Platform Contract 2.0 evaluates exactly nine Integral Platform Systems:
 - **Privacy Shield** — privacy, consent/permission, minimization, retention, sharing, tracking privacy, and disclosure controls.
 - **Wardveil Security** — protection, trust, anti-abuse, anti-stalking, recovery-security, threat handling, and response evidence.
 - **Everkeep** — export, backup, restore, recovery, preservation, portability, migration readiness, and succession.
-- **Glaze UI** — presentation, accessibility, adaptive behavior, status/evidence presentation, and resilience.
+- **GoreeCloud UI (GC UI)** — authoritative presentation and interaction requirements, accessibility, adaptive behavior, and truthful status/evidence presentation; adoption remains unverified.
 - **GoreeCloud Mesh** — governed first-party coordination, dependency awareness, events, and evidence routing.
 - **GoreeCloud Identity** — production user/device/account/session and credential authority.
 - **GoreeCloud Policy** — policy representation, evaluation, decisions, precedence, enforcement coordination, explanation, freshness, and evidence.
