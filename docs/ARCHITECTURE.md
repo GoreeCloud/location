@@ -40,19 +40,26 @@ Each location point is checked against the owner's saved circular places using H
 
 ## Limitations requiring engineering work
 
-- Full pagination and streaming data exports; current GeoJSON/GPX endpoints cap at 10,000 records.
-- Session/token rotation, persistent distributed rate limiting, MFA and external identity integration.
-- Authentication/session design review for native apps; device-token rotation without deleting history.
+- Additional pagination/date filters and resumable downloads; keyset pagination and full streaming GPX/GeoJSON are implemented.
+- Session rotation, persistent distributed rate limiting, MFA and external identity integration; device-key rotation is implemented.
+- Authentication/session design review for native apps; verify the already implemented device-token rotation with external tracking clients.
 - Multiuser family circles with explicit per-user consent, sharing grants, revocation and audit trails.
 - Recalculation of geofence state when existing history/places are edited.
 - GPS telemetry pipelines, dedicated protocol adapters and service observability.
 - Background mobile collection and OS-specific power-management behavior.
 - Queue-based notifications with provider success/failure and delivery safeguards.
 - High-volume PostgreSQL/PostGIS or other spatial storage after evidence warrants migration.
-- Backup/restore integration and secure key rotation; SQLite WAL-safe backups.
+- Automated encrypted backups, full restore drills, retention and schema migrations; consistent online SQLite snapshots are supported via `gclocation backup`.
 - Map server deployment, local routing, geocoding, and provider terms.
 - MIPS (Identity, GoreeShield, Wardveil, Mesh) integrations only after verified interfaces and gates.
 
 ## Development and rollback
 
 No database migrations exist beyond initial idempotent schema creation. Treat schema changes as potentially destructive; take a consistent backup and test migration/rollback on a copy before upgrades. Keep initial user data private. Repository publication does not imply a service has been deployed.
+
+## Follow-up interfaces
+
+- `POST /api/devices/{id}/rotate-token` atomically revokes a prior device-upload token while preserving the device ID, positions, and event history.
+- `GET /api/locations/page` performs keyset ordering on `(recorded_at DESC, id DESC)` with a cursor and per-request owner restrictions.
+- GPX and GeoJSON exports use streaming responses with separate owner-scoped SQLite reads instead of holding unbounded result arrays in RAM.
+- The `gclocation backup --destination NEW_FILE` command uses SQLite's live backup API, exclusive destination creation, and owner-only permissions. No automatic restore or scheduled backup is included.

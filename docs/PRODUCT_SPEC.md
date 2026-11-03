@@ -28,7 +28,7 @@ The full scope below is categorized from the founder's 22-section product brief.
 
 **[Foundation]** Persistent chronological GPS points, last-known device position, owner-scoped timeline, individual deletion, timestamp-based history querying, and export.
 
-**[Planned]** Daily/weekly/monthly/yearly views, calendar navigation, full-history search and pagination, visit/stop/overnight detection, trip grouping and transport modes, cross-device and consented family comparisons, GPS anomaly correction, bulk edits/deletion, configurable retention, import/migration, history backup/restore with recovery tests, automated historical route animations.
+**[Planned]** Daily/weekly/monthly/yearly views, calendar navigation, full-history search and advanced filtering, visit/stop/overnight detection, trip grouping and transport modes, cross-device and consented family comparisons, GPS anomaly correction, bulk edits/deletion, configurable retention, import/migration, history backup/restore with recovery tests, automated historical route animations.
 
 ## 4. Places, geofencing, and location awareness
 
@@ -114,15 +114,15 @@ The full scope below is categorized from the founder's 22-section product brief.
 
 ## 17. Data collection, import, export and migration
 
-**[Foundation]** Authenticated JSON/HTTP ingestion, owner-scoped GPX and GeoJSON exports capped at 10,000 points per response, explicit truncation flags.
+**[Foundation]** Authenticated JSON/HTTP ingestion, owner-scoped full streaming GPX/GeoJSON exports, keyset-paginated GPS history and a manual consistent SQLite snapshot command.
 
-**[Planned]** Streaming/paginated bulk export; Google Takeout/Timeline migration; GPX/FIT/TCX/KML/KMZ/CSV/GeoJSON/ZIP and travel-history imports; OwnTracks/Traccar connectors; duplicate point detection; import progress/diagnostics/undo; geotagged photo imports; data mapping/correction, full-account export, incremental backups, portable format conversions and safe restore.
+**[Planned]** Resumable bulk exports; Google Takeout/Timeline migration; GPX/FIT/TCX/KML/KMZ/CSV/GeoJSON/ZIP and travel-history imports; OwnTracks/Traccar connectors; duplicate point detection; import progress/diagnostics/undo; geotagged photo imports; data mapping/correction, full-account export, incremental backups, portable format conversions and safe restore.
 
 ## 18. Privacy, security and data ownership
 
 **[Foundation]** Self-hosted SQLite, no default accounts, no public signup, scrypt passwords, temporary sessions, per-device hashed ingestion tokens, owner-scoped reads/writes, validation, no analytics/CDN, strict security headers, loopback default, basic throttle, controlled deletion/export.
 
-**[Planned]** Verified external TLS identity integration, MFA and recovery, token rotation, role/group permissions, consent ledger, finer-grained sharing, privacy geofences, data redaction, configurable retention, encrypted backups, audited access, private mapping/geocoding, server diagnostics and independent security acceptance.
+**[Planned]** Verified external TLS identity integration, MFA and recovery, user-session token rotation, role/group permissions, consent ledger, finer-grained sharing, privacy geofences, data redaction, configurable retention, encrypted backups, audited access, private mapping/geocoding, server diagnostics and independent security acceptance.
 
 ## 19. Accounts, administration and management
 

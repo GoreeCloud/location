@@ -149,7 +149,22 @@ function renderDevices() {
     info.append(elt("strong", "", d.name),
                 elt("p", "", d.recorded_at ? "Last position · " + fmtTime(d.recorded_at) : "Awaiting first position"));
     const small = elt("span", "list-time", d.kind);
-    row.append(avatar, info, small);
+    const rotate = elt("button", "tiny-action", "Rotate key");
+    rotate.type = "button";
+    rotate.setAttribute("aria-label", "Rotate ingestion key for " + d.name);
+    rotate.addEventListener("click", async () => {
+      if (!window.confirm("Rotate the private ingestion key for " + d.name
+          + "? The old key will stop working immediately; update your tracker with the new key.")) return;
+      try {
+        const updated = await api("/api/devices/" + d.id + "/rotate-token", {method:"POST"});
+        text("secret-title", "Device key rotated");
+        text("secret-description",
+          "The previous key has been revoked. Save this new key now and reconfigure your tracking client.");
+        text("device-secret", updated.ingest_token);
+        $("secret-dialog").showModal();
+      } catch (error) { showToast(error.message); }
+    });
+    row.append(avatar, info, small, rotate);
     node.append(row);
   }
 }
@@ -372,7 +387,9 @@ function setupEvents() {
         name:$("device-name").value, kind:$("device-kind").value})});
       $("device-name").value = "";
       await refresh();
-      $("device-secret").textContent = added.ingest_token;
+      text("secret-title", "Device added successfully");
+      text("secret-description", "Save this private ingestion token now. It cannot be viewed again after closing this window.");
+      text("device-secret", added.ingest_token);
       $("secret-dialog").showModal();
     } catch (error) { showToast(error.message); }
   });

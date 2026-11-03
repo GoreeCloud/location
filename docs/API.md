@@ -12,8 +12,10 @@ All routes below use JSON unless otherwise noted. There are **no public location
 | GET | `/api/summary` | User session | Counts of devices, points, places, events |
 | GET | `/api/devices` | User session | Owner devices with last positions |
 | POST | `/api/devices` | User session | Create device; receive ingestion token once |
+| POST | `/api/devices/{id}/rotate-token` | Owner session | Issue new device upload token, revoke previous token, preserve history |
 | DELETE | `/api/devices/{id}` | Owner session | Delete device and all its positions/events |
-| GET | `/api/locations?device_id=N&limit=300` | User session | Latest positions (max 1,000); optional owner device |
+| GET | `/api/locations?device_id=N&limit=300` | User session | Latest positions (max 1,000); backwards-compatible list |
+| GET | `/api/locations/page?device_id=N&limit=100&cursor=...` | User session | Keyset history page with `items`, `has_more`, and `next_cursor` |
 | POST | `/api/locations` | User session | Record point for owner device |
 | DELETE | `/api/locations/{id}` | Owner session | Delete individual point |
 | POST | `/api/ingest/{device_id}` | Device token | Upload point only, never read |
@@ -21,8 +23,8 @@ All routes below use JSON unless otherwise noted. There are **no public location
 | POST | `/api/places` | User session | Create circular geofence |
 | DELETE | `/api/places/{id}` | Owner session | Delete geofence and its events |
 | GET | `/api/events?limit=40` | User session | Geofence transition log |
-| GET | `/api/export/geojson?device_id=N` | Owner session | GeoJSON export, capped 10,000 |
-| GET | `/api/export/gpx?device_id=N` | Owner session | GPX export, capped 10,000 |
+| GET | `/api/export/geojson?device_id=N` | Owner session | Complete streaming GeoJSON export |
+| GET | `/api/export/gpx?device_id=N` | Owner session | Complete streaming GPX export |
 
 ## Authentication
 
@@ -45,7 +47,7 @@ curl -X POST http://127.0.0.1:8123/api/devices \
 
 Valid kinds: `person`, `vehicle`, `pet`, `item`, `asset`, `other`.
 
-The returned `ingest_token` is only shown once. This token has **write-only scope for the one registered device** and is not a user session token.
+The returned `ingest_token` is only shown once. This token has **write-only scope for the one registered device** and is not a user session token. `POST /api/devices/{id}/rotate-token` immediately invalidates the previous ingestion token without deleting historical points; its response includes a one-time replacement.
 
 ## Upload location
 
@@ -68,6 +70,6 @@ Only circular geofences exist today. Geofence transitions require sufficiently a
 
 ## Export limits
 
-The GPX endpoint returns `X-GoreeCloud-Export-Truncated: true` when more than 10,000 positions exist. The GeoJSON endpoint returns `truncated: true` in the response body. Exports are intentionally **not** represented as complete when truncated.
+GPX and GeoJSON exports stream **every** point for the authenticated owner's requested device. The old 10,000-record cutoff and truncation indicators have been removed. Exports are not resumable in this development preview; keep backup copies of large downloads. History pagination uses an opaque `next_cursor` returned by `/api/locations/page`; supply it as `cursor` for the next page, keep the same device filter, and do not use the cursor as a permission token.
 
 All example coordinates are fictitious documentation data.

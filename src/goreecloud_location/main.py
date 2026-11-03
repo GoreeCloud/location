@@ -7,6 +7,8 @@ tracking. The default server binds to 127.0.0.1.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import base64
+import binascii
 import json
 import math
 import os
@@ -17,7 +19,7 @@ import time
 from xml.etree import ElementTree
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
@@ -284,6 +286,23 @@ def create_app(db_path: Path | None = None) -> FastAPI:
             ).fetchall()
         return [rowdict(row) for row in rows]
 
+    @app.post("/api/devices/{device_id}/rotate-token")
+    def rotate_device_token(device_id: int, user=Depends(account)):
+        """Issue a replacement write-only token without deleting the device's history.
+
+        The previous token ceases to work immediately when the database commit
+        completes; no history or device identity is lost.
+        """
+        new_token = secrets.token_urlsafe(32)
+        with connect(path) as db:
+            owned_device(db, user["id"], device_id)
+            db.execute(
+                "UPDATE devices SET ingest_token_hash=? WHERE id=? AND account_id=?",
+                (token_digest(new_token), device_id, user["id"]),
+            )
+        return {"id": device_id, "ingest_token": new_token,
+                "warning": "The old token is now revoked. Save the new token once and reconfigure your device."}
+
     @app.delete("/api/devices/{device_id}", status_code=204)
     def delete_device(device_id: int, user=Depends(account)):
         with connect(path) as db:
@@ -333,6 +352,59 @@ def create_app(db_path: Path | None = None) -> FastAPI:
                     (user["id"], limit),
                 ).fetchall()
         return [rowdict(row) for row in rows]
+
+    def encode_cursor(recorded_at: str, point_id: int) -> str:
+        value = json.dumps([recorded_at, point_id], separators=(",", ":")).encode()
+        return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
+
+    def decode_cursor(cursor: str | None) -> tuple[str, int] | None:
+        if cursor is None:
+            return None
+        if not 1 <= len(cursor) <= 256 or not all(c.isalnum() or c in "-_" for c in cursor):
+            api_error(422, "Invalid location cursor")
+        try:
+            data = base64.b64decode(cursor + "=" * (-len(cursor) % 4), altchars=b"-_", validate=True)
+            pair = json.loads(data)
+            if not (isinstance(pair, list) and len(pair) == 2
+                    and isinstance(pair[0], str) and len(pair[0]) <= 40
+                    and type(pair[1]) is int and pair[1] > 0
+                    and datetime.fromisoformat(pair[0]).tzinfo is not None):
+                raise ValueError("Malformed cursor")
+            return pair[0], pair[1]
+        except (ValueError, TypeError, UnicodeDecodeError, binascii.Error):
+            api_error(422, "Invalid location cursor")
+
+    @app.get("/api/locations/page")
+    def location_page(device_id: int | None = None,
+                      limit: int = Query(default=100, ge=1, le=500),
+                      cursor: str | None = Query(default=None, max_length=256),
+                      user=Depends(account)):
+        """Keyset pagination, ordered by timestamp and stable ID.
+
+        Cursor never authorizes data: every page is scoped to the user.
+        """
+        before = decode_cursor(cursor)
+        clauses = ["d.account_id=?"]
+        args: list[object] = [user["id"]]
+        with connect(path) as db:
+            if device_id is not None:
+                owned_device(db, user["id"], device_id)
+                clauses.append("d.id=?")
+                args.append(device_id)
+            if before is not None:
+                clauses.append("(p.recorded_at < ? OR (p.recorded_at = ? AND p.id < ?))")
+                args.extend([before[0], before[0], before[1]])
+            query = ("""SELECT p.*, d.name AS device_name, d.kind AS device_kind
+                        FROM points p JOIN devices d ON d.id=p.device_id
+                        WHERE """ + " AND ".join(clauses) +
+                     " ORDER BY p.recorded_at DESC, p.id DESC LIMIT ?")
+            args.append(limit + 1)
+            rows = db.execute(query, args).fetchall()
+        more = len(rows) > limit
+        items = [rowdict(r) for r in rows[:limit]]
+        next_cursor = (encode_cursor(items[-1]["recorded_at"], items[-1]["id"])
+                       if more and items else None)
+        return {"items": items, "next_cursor": next_cursor, "has_more": more}
 
     @app.delete("/api/locations/{point_id}", status_code=204)
     def delete_point(point_id: int, user=Depends(account)):
@@ -389,48 +461,73 @@ def create_app(db_path: Path | None = None) -> FastAPI:
             ).fetchall()
         return [rowdict(row) for row in rows]
 
-    def export_points(db, owner_id: int, device_id: int):
-        owned_device(db, owner_id, device_id)
-        rows = db.execute(
-            """SELECT latitude,longitude,altitude_m,recorded_at,accuracy_m,speed_mps
-               FROM points WHERE device_id=? ORDER BY recorded_at ASC,id ASC LIMIT 10001""",
-            (device_id,),
-        ).fetchall()
-        return rows[:10000], len(rows) > 10000
+    def iter_export_rows(owner_id: int, device_id: int):
+        """Stream every historical position in ascending timestamp order.
+
+        A new connection and an owner-constrained query remain active during the
+        response; no unbounded fetchall or silent fixed-record cap.
+        """
+        with connect(path) as db:
+            rows = db.execute(
+                """SELECT p.latitude,p.longitude,p.altitude_m,p.recorded_at,
+                          p.accuracy_m,p.speed_mps
+                   FROM points p JOIN devices d ON d.id=p.device_id
+                   WHERE d.account_id=? AND d.id=?
+                   ORDER BY p.recorded_at ASC,p.id ASC""",
+                (owner_id, device_id),
+            )
+            yield from rows
 
     @app.get("/api/export/geojson")
     def export_geojson(device_id: int, user=Depends(account)):
         with connect(path) as db:
-            rows, truncated = export_points(db, user["id"], device_id)
-        features = [
-            {"type": "Feature", "geometry": {"type": "Point",
-             "coordinates": [r["longitude"], r["latitude"]]},
-             "properties": {"recorded_at": r["recorded_at"], "altitude_m": r["altitude_m"],
-                            "accuracy_m": r["accuracy_m"], "speed_mps": r["speed_mps"]}}
-            for r in rows
-        ]
-        return JSONResponse({"type": "FeatureCollection", "features": features,
-                             "truncated": truncated},
-                            headers={"Content-Disposition": 'attachment; filename="locations.geojson"'})
+            owned_device(db, user["id"], device_id)
+        owner_id = user["id"]
+
+        def generate():
+            yield '{"type":"FeatureCollection","features":['
+            first = True
+            for r in iter_export_rows(owner_id, device_id):
+                feature = {
+                    "type": "Feature",
+                    "geometry": {"type": "Point",
+                                 "coordinates": [r["longitude"], r["latitude"]]},
+                    "properties": {
+                        "recorded_at": r["recorded_at"], "altitude_m": r["altitude_m"],
+                        "accuracy_m": r["accuracy_m"], "speed_mps": r["speed_mps"]
+                    },
+                }
+                if not first:
+                    yield ","
+                yield json.dumps(feature, separators=(",", ":"), allow_nan=False)
+                first = False
+            yield ']}'
+
+        return StreamingResponse(generate(), media_type="application/geo+json",
+                                 headers={"Content-Disposition": 'attachment; filename="locations.geojson"'})
 
     @app.get("/api/export/gpx")
     def export_gpx(device_id: int, user=Depends(account)):
         with connect(path) as db:
-            rows, truncated = export_points(db, user["id"], device_id)
-        root = ElementTree.Element("gpx", attrib={"version": "1.1", "creator": "GoreeCloud Location",
-                                                  "xmlns": "http://www.topografix.com/GPX/1/1"})
-        trk = ElementTree.SubElement(root, "trk")
-        seg = ElementTree.SubElement(trk, "trkseg")
-        for r in rows:
-            pt = ElementTree.SubElement(seg, "trkpt",
-                attrib={"lat": str(r["latitude"]), "lon": str(r["longitude"])})
-            if r["altitude_m"] is not None:
-                ElementTree.SubElement(pt, "ele").text = str(r["altitude_m"])
-            ElementTree.SubElement(pt, "time").text = r["recorded_at"]
-        data = ElementTree.tostring(root, encoding="utf-8", xml_declaration=True)
-        return Response(content=data, media_type="application/gpx+xml",
-            headers={"Content-Disposition": 'attachment; filename="locations.gpx"',
-                     "X-GoreeCloud-Export-Truncated": str(truncated).lower()})
+            owned_device(db, user["id"], device_id)
+        owner_id = user["id"]
+
+        def generate():
+            yield (b'<?xml version="1.0" encoding="utf-8"?>'
+                   b'<gpx xmlns="http://www.topografix.com/GPX/1/1" '
+                   b'version="1.1" creator="GoreeCloud Location"><trk><trkseg>')
+            for r in iter_export_rows(owner_id, device_id):
+                pt = ElementTree.Element("trkpt", attrib={
+                    "lat": str(r["latitude"]), "lon": str(r["longitude"])
+                })
+                if r["altitude_m"] is not None:
+                    ElementTree.SubElement(pt, "ele").text = str(r["altitude_m"])
+                ElementTree.SubElement(pt, "time").text = r["recorded_at"]
+                yield ElementTree.tostring(pt, encoding="utf-8")
+            yield b"</trkseg></trk></gpx>"
+
+        return StreamingResponse(generate(), media_type="application/gpx+xml",
+                                 headers={"Content-Disposition": 'attachment; filename="locations.gpx"'})
 
     static_dir = Path(__file__).parent / "static"
     app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")

@@ -10,7 +10,7 @@ Precise location history reveals home/work routines and sensitive activities. Av
 
 - scrypt password hashing with 16-byte per-user salt; 14-character minimum password.
 - Random 256-bit-class session and device tokens; only SHA-256 digests stored in SQLite.
-- Eight-hour sessions, explicit session revocation and in-memory per-username login throttling.
+- Eight-hour sessions, explicit session revocation and in-memory per-username login throttling; device-specific token rotation without deleting history.
 - Separate owner-session and device-upload token scopes.
 - Pydantic validation, strict request schemas, bounded GPS numeric fields and timestamp checks.
 - Private-by-default API endpoints, account-scoped database queries.
@@ -23,9 +23,9 @@ Precise location history reveals home/work routines and sensitive activities. Av
 
 - Sessions are held in browser sessionStorage (XSS-sensitive); do not treat them as persistent MFA sessions.
 - Rate limiting is local-process only. Reverse proxies must enforce request limits and TLS.
-- No password reset, MFA, OIDC integration, IP allow-listing, account lockout policy, or token rotation.
+- No password reset, MFA, OIDC integration, IP allow-listing, distributed account lockout or user-session token rotation. Device ingestion token rotation exists.
 - No independent audit of proxy headers or shared tenant safety at scale.
-- No automated at-rest encryption. Use OS volume encryption and protected backups.
+- No automated at-rest encryption. SQLite DB and manual snapshot files use mode 0600; use OS volume encryption and protected backups.
 - Database schemas have not yet been migrated under release controls.
 - No penetration test, native mobile client audit, or production load/recovery validation.
 - The API may accept historical GPS points; never treat API-reported positions as proof of a person's physical presence.
@@ -46,11 +46,11 @@ Precise location history reveals home/work routines and sensitive activities. Av
 ## Threat model
 
 - **Unauthorized tracking:** require user consent, explicit device enrollment, and access isolation; no covert discovery.
-- **Credential compromise:** short sessions, strong password hashing, token revocation by session logout/device deletion; MFA and rotation planned.
+- **Credential compromise:** short sessions, strong password hashing, user-session logout and device-token rotation without losing history; MFA and user-session rotation planned.
 - **Cross-account access:** test positive/negative ownership checks across every new endpoint.
 - **Location exfiltration:** avoid third-party map requests by default; opt in only to owner-controlled tile services.
 - **Web injection:** never use untrusted values as markup; use textContent, CSP, input validation, and no scripts from untrusted origins.
-- **Data loss:** WAL-aware backups, restore drills and migrations planned.
+- **Data loss:** an operator-run WAL-consistent backup command exists; automated encrypted backups, tested restore drills and migrations remain planned.
 
 ### Vulnerability reporting
 

@@ -9,14 +9,14 @@
 
 - Private accounts created by a local administrator; password hashes use scrypt.
 - Login with short-lived, hashed-at-rest bearer sessions; logout revokes sessions.
-- User-owned devices (people, vehicles, pets, items, assets) with one-time ingestion tokens.
+- User-owned devices (people, vehicles, pets, items, assets) with one-time, owner-rotatable ingestion tokens.
 - Authenticated HTTP location ingestion from browsers or compatible senders.
 - Validated GPS latitude/longitude, accuracy, altitude, speed, heading, battery, timestamp.
 - Timestamp-ordered location history and last-known positions.
 - Circular places/geofences with arrival and departure events when reported GPS accuracy is sufficient.
 - Responsive dark/light GoreeCloud UI dashboard with coordinate-map view, route overlays, device cards, timeline, places, and recent events.
 - Explicit browser location capture (requires user permission + HTTPS or localhost).
-- Owner-scoped GeoJSON and GPX exports, record deletion, device/place deletion.
+- Owner-scoped *streaming, complete* GeoJSON and GPX exports, cursor-paginated history, record deletion, device/place deletion.
 - Zero-dependency static browser UI and no mandatory external map requests.
 - Optional relative-path tile URL pointing to a **separately hosted** private tile server.
 - Docker/Compose deployment example bound to 127.0.0.1; automated API regression tests and CI configuration.
@@ -35,7 +35,7 @@ gclocation serve
 
 Open **http://127.0.0.1:8123**. Account setup prompts for a password of at least 14 characters, without putting credentials in shell history. No account is ever created automatically.
 
-Location data is stored by default in `~/.local/share/goreecloud-location/location.db`. Set `GC_LOCATION_DB` to override that path. Back up the database **and** its WAL files consistently (or use SQLite's backup API); do not publish your database or tokens.
+Location data is stored by default in `~/.local/share/goreecloud-location/location.db`. Set `GC_LOCATION_DB` to override that path. Use the built-in online backup command to capture a consistent snapshot, including committed WAL transactions; do not publish your database or tokens.
 
 ## Docker Compose (development / behind reverse proxy)
 
@@ -62,10 +62,10 @@ curl -X POST 'http://127.0.0.1:8123/api/ingest/DEVICE_ID' \
   --data '{"latitude":35.96,"longitude":-83.92,"accuracy_m":12}'
 ```
 
-The example coordinates are illustrative, not real user data. An ingestion token can only upload positions for its single associated device; it cannot read private history. Replace it by deleting and recreating the device (which also deletes its history) until token rotation exists.
+The example coordinates are illustrative, not real user data. An ingestion token can only upload positions for its single associated device; it cannot read private history. Rotate the token using the **Rotate key** action in Devices, or POST `/api/devices/{id}/rotate-token`. Old tokens become invalid immediately and history is preserved; update your tracking client with the new key.
 
 The authenticated API accepts sessions through `Authorization: Bearer SESSION_TOKEN` and provides:
-`/api/me`, `/api/summary`, `/api/devices`, `/api/locations`, `/api/places`, `/api/events`, `/api/export/gpx?device_id=N`, and `/api/export/geojson?device_id=N`. The export API is currently capped at 10,000 records per call and indicates truncation. See [API reference](docs/API.md).
+`/api/me`, `/api/summary`, `/api/devices`, `/api/locations`, `/api/places`, `/api/events`, `/api/export/gpx?device_id=N`, and `/api/export/geojson?device_id=N`. Exports stream the entire selected device history without a fixed point cap; use `/api/locations/page` for cursor-based history pagination. See [API reference](docs/API.md).
 
 ## Quality and scope
 
@@ -80,3 +80,13 @@ This repository deliberately does not bundle proprietary Life360 code, proprieta
 The interface follows the intent of [GoreeCloud UI](https://github.com/GoreeCloud/gc-ui)'s current design language; **pixel-perfect or cross-device visual acceptance has not been verified**. Details: [architecture](docs/ARCHITECTURE.md), [security](docs/SECURITY.md), [product specification](docs/PRODUCT_SPEC.md), and [implementation status](docs/STATUS.md).
 
 License: [MIT](LICENSE). Copyright © 2026 GoreeCloud.
+
+### Consistent local backup
+
+Stop using raw file copies while SQLite is active. Instead, run:
+
+```sh
+gclocation backup --destination ~/private-location-2026-11-03.sqlite
+```
+
+The destination directory must already exist and the backup file must be new; existing files are never overwritten. The output uses owner-only file permissions. Encrypt and safeguard backups separately. A restore command and end-to-end disaster recovery verification are not yet available.

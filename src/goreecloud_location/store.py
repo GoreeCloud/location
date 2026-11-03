@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import secrets
 import sqlite3
+import stat
 from typing import Iterator
 
 USERNAME = re.compile(r"^[A-Za-z0-9_.-]{3,32}$")
@@ -30,6 +31,23 @@ def default_db_path() -> Path:
 
 def initialize(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if path.is_symlink():
+        raise ValueError("Refusing a symlinked database path.")
+    # SQLite's default creation mode inherits the process umask, which may be
+    # 022. Force the sensitive database file to owner-only access.
+    flags = os.O_CREAT | os.O_EXCL | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        fd = os.open(path, flags, 0o600)
+    except FileExistsError:
+        if path.is_symlink():
+            raise ValueError("Refusing a symlinked database path.")
+    else:
+        os.close(fd)
+    if not path.is_file():
+        raise ValueError("Database path is not a regular file.")
+    file_mode = stat.S_IMODE(path.stat().st_mode)
+    if file_mode & 0o077:
+        path.chmod(file_mode & ~0o077)
     with connect(path) as db:
         db.executescript("""
             CREATE TABLE IF NOT EXISTS accounts (
@@ -148,3 +166,28 @@ def create_account(path: Path, username: str, password: str) -> int:
             (username, hashed, utc_now()),
         )
         return int(cur.lastrowid)
+
+def backup_database(path: Path, destination: Path) -> None:
+    """Take a consistent SQLite snapshot without overwriting other files.
+
+    SQLite's online backup API includes committed data in WAL mode; an
+    exclusive destination prevents inadvertent destruction of prior backups.
+    The caller should separately protect backup transfer and storage.
+    """
+    path, destination = Path(path), Path(destination)
+    if not path.is_file() or path.is_symlink():
+        raise ValueError("Source database must be a regular non-symlink file.")
+    if destination.is_symlink():
+        raise ValueError("Refusing a symlinked backup destination.")
+    if not destination.parent.is_dir():
+        raise ValueError("Backup destination directory does not exist.")
+    flags = os.O_CREAT | os.O_EXCL | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(destination, flags, 0o600)
+    os.close(fd)
+    try:
+        with sqlite3.connect(path) as source, sqlite3.connect(destination) as snapshot:
+            source.backup(snapshot)
+        destination.chmod(0o600)
+    except Exception:
+        destination.unlink(missing_ok=True)
+        raise
