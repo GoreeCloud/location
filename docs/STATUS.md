@@ -158,10 +158,12 @@ Even successful browser CI does not establish completed GC UI visual acceptance,
 
 ## Development cycle 10 — settings composition
 
-**Candidate improvement awaiting CI and screenshot review:**
+**Implemented and verified through GitHub CI and inspected Chromium screenshots:**
 
 - Rebalance three Privacy & settings cards to one row on wide desktop screens, a full-width final information card on tablet screens, and a vertical stack on phones.
 - Include layout geometry checks in the Chromium browser regression suite for all three supported viewport sizes.
 - Document observed screenshot quality and remaining acceptance criteria in [visual audit](VISUAL_AUDIT_2026-11-03.md).
+
+Verification: [GitHub Actions run 41638709939](https://github.com/GoreeCloud/location/actions/runs/41638709939) passed **31 API tests**, JavaScript syntax and real Chromium browser journeys at desktop/tablet/mobile widths, including CSS geometry assertions. All 18 synthetic screenshots were generated, and corrected desktop/tablet light-settings screenshots were inspected to confirm balanced layout. [PR #12](https://github.com/GoreeCloud/location/pull/12) merged to main. Remaining browser engines, accessibility and native application verification are still open.
 
 No native mobile functionality or production deployment is implied. Full GC UI visual acceptance still requires further verification.
