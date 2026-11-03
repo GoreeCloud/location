@@ -101,11 +101,13 @@ No server has been redeployed. This is a local administrative recovery tool, not
 
 ## Development cycle 6 — authentication protection
 
-**Implemented in the development worktree; CI and production acceptance pending:**
+**Implemented and covered by passing GitHub tests; production authentication acceptance pending:**
 
 - Bounded, thread-safe username/ASGI-peer/global attempt limits reserved before password verification.
 - Unknown usernames undergo the same scrypt verifier path using an unused dummy hash.
 - At most 20 live user sessions per account; older sessions are automatically revoked.
 - Unit and API tests cover expiration, concurrent admissions, memory bounds, unknown-user verifier calls, username isolation, and session caps.
+
+Verification: [push CI 41607236405](https://github.com/GoreeCloud/location/actions/runs/41607236405) and [PR CI 41607266407](https://github.com/GoreeCloud/location/actions/runs/41607266407) passed **27 automated tests**, Python compilation and JavaScript syntax on 3 November 2026; [PR #8](https://github.com/GoreeCloud/location/pull/8) merged to main. A local standalone limiter smoke test also passed.
 
 Limitations: these counters are process-local and ASGI peer identity depends on trusted proxy configuration. They do not amount to distributed abuse prevention, MFA, or production Internet security acceptance.
