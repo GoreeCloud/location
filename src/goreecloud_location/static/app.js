@@ -402,10 +402,12 @@ function setupEvents() {
       $("login-feedback").hidden = false;
     }
   });
-  $("logout").addEventListener("click", async () => {
+  const logoutAction = async () => {
     try { await api("/api/auth/logout", {method:"POST"}); } catch (_ignore) {}
     signOutLocal();
-  });
+  };
+  $("logout").addEventListener("click", logoutAction);
+  $("mobile-logout").addEventListener("click", logoutAction);
   $("theme-toggle").addEventListener("click", () => {
     const mode = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = mode;
