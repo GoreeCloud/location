@@ -1,0 +1,150 @@
+"""SQLite persistence and password utilities.
+
+Location data is sensitive: all access must be scoped by the authenticated account.
+No account is created automatically on service startup.
+"""
+from __future__ import annotations
+
+from contextlib import contextmanager
+from datetime import datetime, timezone
+import hashlib
+import os
+from pathlib import Path
+import re
+import secrets
+import sqlite3
+from typing import Iterator
+
+USERNAME = re.compile(r"^[A-Za-z0-9_.-]{3,32}$")
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+
+
+def default_db_path() -> Path:
+    data_home = os.environ.get("XDG_DATA_HOME")
+    parent = Path(data_home) if data_home else Path.home() / ".local" / "share"
+    return Path(os.environ.get("GC_LOCATION_DB", str(parent / "goreecloud-location" / "location.db"))).expanduser()
+
+
+def initialize(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with connect(path) as db:
+        db.executescript("""
+            CREATE TABLE IF NOT EXISTS accounts (
+                id INTEGER PRIMARY KEY,
+                username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'owner',
+                created_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS sessions (
+                token_hash TEXT PRIMARY KEY,
+                account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+                expires_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_sessions_account ON sessions(account_id);
+            CREATE TABLE IF NOT EXISTS devices (
+                id INTEGER PRIMARY KEY,
+                account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+                name TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                ingest_token_hash TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_devices_account ON devices(account_id);
+            CREATE TABLE IF NOT EXISTS points (
+                id INTEGER PRIMARY KEY,
+                device_id INTEGER NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+                latitude REAL NOT NULL CHECK(latitude BETWEEN -90 AND 90),
+                longitude REAL NOT NULL CHECK(longitude BETWEEN -180 AND 180),
+                accuracy_m REAL,
+                altitude_m REAL,
+                speed_mps REAL,
+                heading_deg REAL,
+                battery_percent INTEGER,
+                recorded_at TEXT NOT NULL,
+                received_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_points_device_time
+                ON points(device_id, recorded_at DESC, id DESC);
+            CREATE TABLE IF NOT EXISTS places (
+                id INTEGER PRIMARY KEY,
+                account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+                name TEXT NOT NULL,
+                latitude REAL NOT NULL,
+                longitude REAL NOT NULL,
+                radius_m REAL NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_places_account ON places(account_id);
+            CREATE TABLE IF NOT EXISTS geofence_state (
+                device_id INTEGER NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+                place_id INTEGER NOT NULL REFERENCES places(id) ON DELETE CASCADE,
+                inside INTEGER NOT NULL,
+                PRIMARY KEY(device_id, place_id)
+            );
+            CREATE TABLE IF NOT EXISTS events (
+                id INTEGER PRIMARY KEY,
+                device_id INTEGER NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+                place_id INTEGER NOT NULL REFERENCES places(id) ON DELETE CASCADE,
+                kind TEXT NOT NULL CHECK(kind IN ('arrival','departure')),
+                recorded_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_events_device_time
+                ON events(device_id, recorded_at DESC, id DESC);
+        """)
+
+
+@contextmanager
+def connect(path: Path) -> Iterator[sqlite3.Connection]:
+    db = sqlite3.connect(path, timeout=15)
+    db.row_factory = sqlite3.Row
+    db.execute("PRAGMA foreign_keys=ON")
+    db.execute("PRAGMA busy_timeout=15000")
+    db.execute("PRAGMA journal_mode=WAL")
+    try:
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+def hash_password(password: str) -> str:
+    if not 14 <= len(password) <= 1024:
+        raise ValueError("Password must be 14–1024 characters.")
+    salt = secrets.token_bytes(16)
+    digest = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=2**14, r=8, p=1)
+    return f"scrypt:16384:8:1:{salt.hex()}:{digest.hex()}"
+
+
+def verify_password(password: str, stored: str) -> bool:
+    try:
+        label, n, r, p, salt, expected = stored.split(":")
+        if label != "scrypt" or (int(n), int(r), int(p)) != (2**14, 8, 1):
+            return False
+        digest = hashlib.scrypt(password.encode("utf-8"), salt=bytes.fromhex(salt),
+                                n=int(n), r=int(r), p=int(p))
+        return secrets.compare_digest(digest, bytes.fromhex(expected))
+    except (ValueError, TypeError, OverflowError):
+        return False
+
+
+def token_digest(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def create_account(path: Path, username: str, password: str) -> int:
+    if not USERNAME.fullmatch(username):
+        raise ValueError("Username must be 3–32 letters, digits, dots, dashes, or underscores.")
+    hashed = hash_password(password)
+    with connect(path) as db:
+        cur = db.execute(
+            "INSERT INTO accounts (username, password_hash, created_at) VALUES (?, ?, ?)",
+            (username, hashed, utc_now()),
+        )
+        return int(cur.lastrowid)

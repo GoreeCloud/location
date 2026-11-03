@@ -1,0 +1,441 @@
+"""GoreeCloud Location API.
+
+An authenticated, owner-scoped development foundation. It does not offer public
+sharing, covert tracking, professional emergency response, or mobile background
+tracking. The default server binds to 127.0.0.1.
+"""
+from __future__ import annotations
+
+from datetime import datetime, timedelta, timezone
+import json
+import math
+import os
+from pathlib import Path
+import secrets
+import threading
+import time
+from typing import Annotated
+from xml.etree import ElementTree
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
+from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, ConfigDict, Field
+
+from .store import connect, default_db_path, initialize, token_digest, utc_now, verify_password
+
+
+class StrictModel(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
+
+class LoginIn(StrictModel):
+    username: str = Field(min_length=3, max_length=32)
+    password: str = Field(min_length=1, max_length=1024)
+
+
+class DeviceIn(StrictModel):
+    name: str = Field(min_length=1, max_length=80)
+    kind: str = Field(default="person", pattern=r"^(person|vehicle|pet|item|asset|other)$")
+
+
+class PlaceIn(StrictModel):
+    name: str = Field(min_length=1, max_length=80)
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    radius_m: float = Field(ge=10, le=50000)
+
+
+class PointIn(StrictModel):
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    accuracy_m: float | None = Field(default=None, ge=0, le=10000)
+    altitude_m: float | None = Field(default=None, ge=-11000, le=100000)
+    speed_mps: float | None = Field(default=None, ge=0, le=300)
+    heading_deg: float | None = Field(default=None, ge=0, le=360)
+    battery_percent: int | None = Field(default=None, ge=0, le=100)
+    recorded_at: datetime | None = None
+
+
+class UserPointIn(PointIn):
+    device_id: int = Field(ge=1)
+
+
+def api_error(status: int, detail: str) -> None:
+    raise HTTPException(status_code=status, detail=detail)
+
+
+def haversine_m(a_lat: float, a_lon: float, b_lat: float, b_lon: float) -> float:
+    a1, a2 = math.radians(a_lat), math.radians(b_lat)
+    da, db = a2 - a1, math.radians(b_lon - a_lon)
+    h = math.sin(da / 2) ** 2 + math.cos(a1) * math.cos(a2) * math.sin(db / 2) ** 2
+    return 12742000 * math.asin(min(1.0, math.sqrt(h)))
+
+
+def timestamp_for(value: datetime | None) -> str:
+    if value is None:
+        value = datetime.now(timezone.utc)
+    if value.tzinfo is None or value.utcoffset() is None:
+        api_error(422, "recorded_at must include a timezone offset")
+    value = value.astimezone(timezone.utc)
+    if value > datetime.now(timezone.utc) + timedelta(minutes=5):
+        api_error(422, "Future location timestamps are not accepted")
+    return value.isoformat(timespec="milliseconds")
+
+
+def rowdict(row):
+    return dict(row) if row is not None else None
+
+
+def clean_name(name: str) -> str:
+    value = name.strip()
+    if not value:
+        api_error(422, "Name cannot be blank")
+    return value
+
+
+def create_app(db_path: Path | None = None) -> FastAPI:
+    path = Path(db_path) if db_path is not None else default_db_path()
+    initialize(path)
+    app = FastAPI(title="GoreeCloud Location", version="0.1.0",
+                  docs_url=None, redoc_url=None, openapi_url=None)
+    bearer = HTTPBearer(auto_error=False)
+    attempts: dict[str, list[float]] = {}
+    attempts_lock = threading.Lock()
+
+    def account(creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]):
+        if not creds or creds.scheme.lower() != "bearer" or len(creds.credentials) > 256:
+            api_error(401, "Authentication required")
+        with connect(path) as db:
+            record = db.execute(
+                """SELECT a.id, a.username, a.role FROM sessions s
+                   JOIN accounts a ON a.id=s.account_id
+                   WHERE s.token_hash=? AND s.expires_at>?""",
+                (token_digest(creds.credentials), utc_now()),
+            ).fetchone()
+        if not record:
+            api_error(401, "Session expired or invalid")
+        return rowdict(record)
+
+    def owned_device(db, account_id: int, device_id: int):
+        row = db.execute(
+            "SELECT * FROM devices WHERE id=? AND account_id=?", (device_id, account_id)
+        ).fetchone()
+        if not row:
+            api_error(404, "Device not found")
+        return row
+
+    def ingest(db, device, point: PointIn):
+        stamp = timestamp_for(point.recorded_at)
+        last = db.execute(
+            """SELECT recorded_at FROM points WHERE device_id=?
+               ORDER BY recorded_at DESC, id DESC LIMIT 1""",
+            (device["id"],),
+        ).fetchone()
+        cur = db.execute(
+            """INSERT INTO points
+               (device_id, latitude, longitude, accuracy_m, altitude_m, speed_mps,
+                heading_deg, battery_percent, recorded_at, received_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (device["id"], point.latitude, point.longitude, point.accuracy_m,
+             point.altitude_m, point.speed_mps, point.heading_deg,
+             point.battery_percent, stamp, utc_now()),
+        )
+        alerts = []
+        # Old imported positions never mutate the current geofence state.
+        if last and stamp < last["recorded_at"]:
+            return {"id": cur.lastrowid, "recorded_at": stamp, "events": alerts}
+        for place in db.execute(
+            "SELECT * FROM places WHERE account_id=?", (device["account_id"],)
+        ).fetchall():
+            if point.accuracy_m is None or point.accuracy_m > min(100, place["radius_m"] / 2):
+                continue
+            is_inside = haversine_m(point.latitude, point.longitude,
+                                    place["latitude"], place["longitude"]) <= place["radius_m"]
+            prev = db.execute(
+                "SELECT inside FROM geofence_state WHERE device_id=? AND place_id=?",
+                (device["id"], place["id"]),
+            ).fetchone()
+            if prev is None:
+                db.execute(
+                    "INSERT INTO geofence_state(device_id,place_id,inside) VALUES(?,?,?)",
+                    (device["id"], place["id"], int(is_inside)),
+                )
+            elif bool(prev["inside"]) != is_inside:
+                db.execute(
+                    "UPDATE geofence_state SET inside=? WHERE device_id=? AND place_id=?",
+                    (int(is_inside), device["id"], place["id"]),
+                )
+                kind = "arrival" if is_inside else "departure"
+                db.execute(
+                    "INSERT INTO events(device_id,place_id,kind,recorded_at) VALUES(?,?,?,?)",
+                    (device["id"], place["id"], kind, stamp),
+                )
+                alerts.append({"kind": kind, "place": place["name"]})
+        return {"id": cur.lastrowid, "recorded_at": stamp, "events": alerts}
+
+    @app.middleware("http")
+    async def safety_headers(request: Request, call_next):
+        result: Response = await call_next(request)
+        result.headers["X-Content-Type-Options"] = "nosniff"
+        result.headers["Referrer-Policy"] = "no-referrer"
+        result.headers["X-Frame-Options"] = "DENY"
+        result.headers["Permissions-Policy"] = "geolocation=(self), microphone=(), camera=()"
+        result.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; style-src 'self'; "
+            "img-src 'self' data: https:; connect-src 'self'; "
+            "base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'"
+        )
+        if request.url.path.startswith("/api/"):
+            result.headers["Cache-Control"] = "no-store"
+        return result
+
+    @app.get("/api/health")
+    def health():
+        return {"status": "ok", "service": "GoreeCloud Location", "version": "0.1.0"}
+
+    @app.get("/api/config")
+    def public_config():
+        tile = os.environ.get("GC_TILE_TEMPLATE", "")
+        if tile and not (tile.startswith("/") and not tile.startswith("//")):
+            tile = ""  # External providers are never enabled implicitly.
+        return {"tile_template": tile, "self_hosted": True}
+
+    @app.post("/api/auth/login")
+    def login(body: LoginIn):
+        name = body.username.lower()
+        now = time.monotonic()
+        with attempts_lock:
+            attempts[name] = [t for t in attempts.get(name, []) if now - t < 300]
+            if len(attempts[name]) >= 5:
+                api_error(429, "Too many attempts; try again later")
+        with connect(path) as db:
+            record = db.execute(
+                "SELECT id, username, role, password_hash FROM accounts WHERE username=?",
+                (body.username,),
+            ).fetchone()
+            ok = bool(record and verify_password(body.password, record["password_hash"]))
+            if not ok:
+                with attempts_lock:
+                    attempts.setdefault(name, []).append(time.monotonic())
+                api_error(401, "Invalid username or password")
+            with attempts_lock:
+                attempts.pop(name, None)
+            token = secrets.token_urlsafe(32)
+            expires = (datetime.now(timezone.utc) + timedelta(hours=8)).isoformat()
+            db.execute(
+                "INSERT INTO sessions(token_hash,account_id,expires_at) VALUES(?,?,?)",
+                (token_digest(token), record["id"], expires),
+            )
+            db.execute("DELETE FROM sessions WHERE expires_at<=?", (utc_now(),))
+        return {"access_token": token, "token_type": "bearer",
+                "expires_at": expires,
+                "user": {"id": record["id"], "username": record["username"], "role": record["role"]}}
+
+    @app.post("/api/auth/logout", status_code=204)
+    def logout(creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
+               user=Depends(account)):
+        with connect(path) as db:
+            db.execute("DELETE FROM sessions WHERE token_hash=?", (token_digest(creds.credentials),))
+        return Response(status_code=204)
+
+    @app.get("/api/me")
+    def me(user=Depends(account)):
+        return user
+
+    @app.get("/api/summary")
+    def summary(user=Depends(account)):
+        with connect(path) as db:
+            devices = db.execute("SELECT COUNT(*) FROM devices WHERE account_id=?", (user["id"],)).fetchone()[0]
+            points = db.execute(
+                "SELECT COUNT(*) FROM points p JOIN devices d ON d.id=p.device_id WHERE d.account_id=?",
+                (user["id"],),
+            ).fetchone()[0]
+            places = db.execute("SELECT COUNT(*) FROM places WHERE account_id=?", (user["id"],)).fetchone()[0]
+            alerts = db.execute(
+                """SELECT COUNT(*) FROM events e JOIN devices d ON d.id=e.device_id
+                   WHERE d.account_id=?""", (user["id"],)
+            ).fetchone()[0]
+        return {"devices": devices, "points": points, "places": places, "events": alerts}
+
+    @app.post("/api/devices", status_code=201)
+    def create_device(body: DeviceIn, user=Depends(account)):
+        secret = secrets.token_urlsafe(32)
+        with connect(path) as db:
+            cur = db.execute(
+                """INSERT INTO devices(account_id,name,kind,ingest_token_hash,created_at)
+                   VALUES(?,?,?,?,?)""",
+                (user["id"], clean_name(body.name), body.kind, token_digest(secret), utc_now()),
+            )
+        return {"id": cur.lastrowid, "name": body.name.strip(), "kind": body.kind,
+                "ingest_token": secret, "warning": "Save this token now. It is not shown again."}
+
+    @app.get("/api/devices")
+    def devices(user=Depends(account)):
+        with connect(path) as db:
+            rows = db.execute(
+                """SELECT d.id,d.name,d.kind,d.created_at,
+                          p.latitude,p.longitude,p.recorded_at,p.accuracy_m,p.battery_percent
+                   FROM devices d LEFT JOIN points p ON p.id = (
+                       SELECT id FROM points WHERE device_id=d.id
+                       ORDER BY recorded_at DESC,id DESC LIMIT 1)
+                   WHERE d.account_id=? ORDER BY d.id DESC""",
+                (user["id"],),
+            ).fetchall()
+        return [rowdict(row) for row in rows]
+
+    @app.delete("/api/devices/{device_id}", status_code=204)
+    def delete_device(device_id: int, user=Depends(account)):
+        with connect(path) as db:
+            owned_device(db, user["id"], device_id)
+            db.execute("DELETE FROM devices WHERE id=?", (device_id,))
+        return Response(status_code=204)
+
+    @app.post("/api/locations", status_code=201)
+    def create_point(body: UserPointIn, user=Depends(account)):
+        with connect(path) as db:
+            device = owned_device(db, user["id"], body.device_id)
+            return ingest(db, device, body)
+
+    @app.post("/api/ingest/{device_id}", status_code=201)
+    def ingest_device(device_id: int, body: PointIn,
+                      creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]):
+        if not creds or creds.scheme.lower() != "bearer" or len(creds.credentials) > 256:
+            api_error(401, "Device token required")
+        with connect(path) as db:
+            device = db.execute(
+                "SELECT * FROM devices WHERE id=? AND ingest_token_hash=?",
+                (device_id, token_digest(creds.credentials)),
+            ).fetchone()
+            if not device:
+                api_error(401, "Invalid device token")
+            return ingest(db, device, body)
+
+    @app.get("/api/locations")
+    def locations(device_id: int | None = None,
+                  limit: int = Query(default=300, ge=1, le=1000),
+                  user=Depends(account)):
+        with connect(path) as db:
+            if device_id is not None:
+                owned_device(db, user["id"], device_id)
+                rows = db.execute(
+                    """SELECT p.*,d.name AS device_name,d.kind AS device_kind
+                       FROM points p JOIN devices d ON d.id=p.device_id
+                       WHERE d.account_id=? AND d.id=?
+                       ORDER BY p.recorded_at DESC,p.id DESC LIMIT ?""",
+                    (user["id"], device_id, limit),
+                ).fetchall()
+            else:
+                rows = db.execute(
+                    """SELECT p.*,d.name AS device_name,d.kind AS device_kind
+                       FROM points p JOIN devices d ON d.id=p.device_id
+                       WHERE d.account_id=? ORDER BY p.recorded_at DESC,p.id DESC LIMIT ?""",
+                    (user["id"], limit),
+                ).fetchall()
+        return [rowdict(row) for row in rows]
+
+    @app.delete("/api/locations/{point_id}", status_code=204)
+    def delete_point(point_id: int, user=Depends(account)):
+        with connect(path) as db:
+            cur = db.execute(
+                """DELETE FROM points WHERE id=? AND device_id IN
+                   (SELECT id FROM devices WHERE account_id=?)""",
+                (point_id, user["id"]),
+            )
+            if not cur.rowcount:
+                api_error(404, "Location not found")
+        return Response(status_code=204)
+
+    @app.get("/api/places")
+    def places(user=Depends(account)):
+        with connect(path) as db:
+            rows = db.execute(
+                "SELECT * FROM places WHERE account_id=? ORDER BY id DESC", (user["id"],)
+            ).fetchall()
+        return [rowdict(row) for row in rows]
+
+    @app.post("/api/places", status_code=201)
+    def create_place(body: PlaceIn, user=Depends(account)):
+        with connect(path) as db:
+            cur = db.execute(
+                """INSERT INTO places(account_id,name,latitude,longitude,radius_m,created_at)
+                   VALUES(?,?,?,?,?,?)""",
+                (user["id"], clean_name(body.name), body.latitude, body.longitude,
+                 body.radius_m, utc_now()),
+            )
+        return {"id": cur.lastrowid, **body.model_dump()}
+
+    @app.delete("/api/places/{place_id}", status_code=204)
+    def delete_place(place_id: int, user=Depends(account)):
+        with connect(path) as db:
+            cur = db.execute(
+                "DELETE FROM places WHERE id=? AND account_id=?", (place_id, user["id"])
+            )
+            if not cur.rowcount:
+                api_error(404, "Place not found")
+        return Response(status_code=204)
+
+    @app.get("/api/events")
+    def events(limit: int = Query(default=40, ge=1, le=200), user=Depends(account)):
+        with connect(path) as db:
+            rows = db.execute(
+                """SELECT e.id,e.kind,e.recorded_at,d.name AS device_name,
+                          pl.name AS place_name
+                   FROM events e JOIN devices d ON d.id=e.device_id
+                   JOIN places pl ON pl.id=e.place_id
+                   WHERE d.account_id=?
+                   ORDER BY e.recorded_at DESC,e.id DESC LIMIT ?""",
+                (user["id"], limit),
+            ).fetchall()
+        return [rowdict(row) for row in rows]
+
+    def export_points(db, owner_id: int, device_id: int):
+        owned_device(db, owner_id, device_id)
+        rows = db.execute(
+            """SELECT latitude,longitude,altitude_m,recorded_at,accuracy_m,speed_mps
+               FROM points WHERE device_id=? ORDER BY recorded_at ASC,id ASC LIMIT 10001""",
+            (device_id,),
+        ).fetchall()
+        return rows[:10000], len(rows) > 10000
+
+    @app.get("/api/export/geojson")
+    def export_geojson(device_id: int, user=Depends(account)):
+        with connect(path) as db:
+            rows, truncated = export_points(db, user["id"], device_id)
+        features = [
+            {"type": "Feature", "geometry": {"type": "Point",
+             "coordinates": [r["longitude"], r["latitude"]]},
+             "properties": {"recorded_at": r["recorded_at"], "altitude_m": r["altitude_m"],
+                            "accuracy_m": r["accuracy_m"], "speed_mps": r["speed_mps"]}}
+            for r in rows
+        ]
+        return JSONResponse({"type": "FeatureCollection", "features": features,
+                             "truncated": truncated},
+                            headers={"Content-Disposition": 'attachment; filename="locations.geojson"'})
+
+    @app.get("/api/export/gpx")
+    def export_gpx(device_id: int, user=Depends(account)):
+        with connect(path) as db:
+            rows, truncated = export_points(db, user["id"], device_id)
+        root = ElementTree.Element("gpx", attrib={"version": "1.1", "creator": "GoreeCloud Location",
+                                                  "xmlns": "http://www.topografix.com/GPX/1/1"})
+        trk = ElementTree.SubElement(root, "trk")
+        seg = ElementTree.SubElement(trk, "trkseg")
+        for r in rows:
+            pt = ElementTree.SubElement(seg, "trkpt",
+                attrib={"lat": str(r["latitude"]), "lon": str(r["longitude"])})
+            if r["altitude_m"] is not None:
+                ElementTree.SubElement(pt, "ele").text = str(r["altitude_m"])
+            ElementTree.SubElement(pt, "time").text = r["recorded_at"]
+        data = ElementTree.tostring(root, encoding="utf-8", xml_declaration=True)
+        return Response(content=data, media_type="application/gpx+xml",
+            headers={"Content-Disposition": 'attachment; filename="locations.gpx"',
+                     "X-GoreeCloud-Export-Truncated": str(truncated).lower()})
+
+    static_dir = Path(__file__).parent / "static"
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+    return app
+
+
+app = create_app()
