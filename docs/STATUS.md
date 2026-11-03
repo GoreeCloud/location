@@ -143,11 +143,15 @@ Not an automatic retention schedule, backup removal, offline-device cleanup or c
 
 ## Development cycle 9 — mobile navigation and rendered browser QA
 
-**Implemented in an isolated worktree, awaiting GitHub CI results and screenshot-led design review:**
+**Implemented in main; GitHub API and Chromium browser CI passed. Further visual/a11y acceptance remains open:**
 
 - Visible mobile Privacy navigation and mobile Sign out control (the previously hidden desktop sidebar contained both).
 - Playwright Chromium browser journey using a throwaway loopback API and synthetic location records.
 - Desktop, tablet and phone screenshot evidence in light/dark modes, with secret tokens masked.
 - Assertions for responsive navigation, sign-out, GPS capture, private network requests, console errors and horizontal document overflow.
+
+Verification: [GitHub Actions run 41638054089](https://github.com/GoreeCloud/location/actions/runs/41638054089) passed **31 API tests**, Python and JavaScript checks, and browser journeys for 1440×900 desktop, 820×1180 tablet, and 390×844 phone using isolated synthetic accounts. Device enrollment, browser GPS capture, private retention preview, light/dark theme, navigation and sign-out passed. [PR #11](https://github.com/GoreeCloud/location/pull/11) merged into `main`.
+
+Visual evidence: [18 synthetic screenshots, masked device tokens](https://github.com/GoreeCloud/location/actions/runs/41638054089) retained as a seven-day GitHub Actions artifact. Screenshots of desktop login/overview/settings/dialog, phone login/settings/tracked overview, and tablet settings were manually examined. The interface is visibly styled and responsive; remaining design observations include an uneven second row in the tablet/desktop settings grid, and further keyboard/screen-reader, high contrast, focus and physical-device acceptance. Do not interpret green CI as complete premium design compliance.
 
 Even successful browser CI does not establish completed GC UI visual acceptance, keyboard/screen-reader quality, native mobile clients or production deployment.
