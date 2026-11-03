@@ -30,7 +30,7 @@ async function run(){
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"gc-location-qa-"));
  const env={...process.env,GC_LOCATION_DB:path.join(dir,"synthetic.sqlite")};
  execFileSync(python,["-c",
-  "from goreecloud_location.store import initialize,create_account,default_db_path; p=default_db_path(); initialize(p); create_account(p,'browseruser','synthetic browser acceptance test password')"],{env});
+  "from goreecloud_location.store import initialize,create_account,default_db_path; p=default_db_path(); initialize(p); [create_account(p,u,'synthetic browser acceptance test password') for u in ('browserdesktop','browsertablet','browsermobile')]"],{env});
  const port=await portNumber(),url="http://127.0.0.1:"+port;
  const proc=spawn(python,["-m","goreecloud_location.cli","serve","--host","127.0.0.1","--port",String(port)],{env,stdio:"ignore"});
  let browser=null;
@@ -47,7 +47,7 @@ async function run(){
    await page.goto(url,{waitUntil:"networkidle"});
    assert.equal(await page.locator("#login-screen").isVisible(),true);
    await page.screenshot({path:path.join(evidence,v.name+"-login.png"),fullPage:true});
-   await page.locator("#username").fill("browseruser");
+   await page.locator("#username").fill("browser"+v.name);
    await page.locator("#password").fill(pass);
    await page.locator("#login-form button[type=submit]").click();
    await page.waitForFunction(()=>document.querySelector("#metric-points").textContent.trim()!=="—");
@@ -72,11 +72,13 @@ async function run(){
    await nav("overview").click();
    await ctx.grantPermissions(["geolocation"],{origin:url});
    await ctx.setGeolocation({latitude:35.987,longitude:-83.915,accuracy:12});
+   const baseline=Number((await page.locator("#metric-points").textContent()).replaceAll(",",""));
    await page.locator("#capture-location").click();
-   await page.waitForFunction(()=>Number(document.querySelector("#metric-points").textContent.replaceAll(",",""))>0);
+   await page.waitForFunction(previous=>Number(document.querySelector("#metric-points").textContent.replaceAll(",",""))>previous,baseline,{timeout:10000});
+   await page.getByText("Location captured privately.").waitFor({state:"visible",timeout:10000});
    await page.screenshot({path:path.join(evidence,v.name+"-overview-tracked.png"),fullPage:true});
    await nav("history").click();
-   assert.match(await page.locator("#history-table").innerText(),/Synthetic/);
+   assert.match(await page.locator("#history-table").innerText(),new RegExp("Synthetic "+v.name+" device"));
    await page.screenshot({path:path.join(evidence,v.name+"-history.png"),fullPage:true});
    const geometry=await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
    assert.ok(geometry.width<=geometry.viewport+2,"Horizontal overflow "+v.name+" "+JSON.stringify(geometry));
