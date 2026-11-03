@@ -129,12 +129,14 @@ This validates a development server's loopback startup and request wiring only. 
 
 ## Development cycle 8 — manual retention controls
 
-**Implemented in the development worktree; GitHub CI, visual and production acceptance pending:**
+**Implemented in source, with GitHub CI passing; visual and production acceptance pending:**
 
 - Owner-scoped read-only preview for GPS positions and geofence events older than a configurable number of days.
 - Manual cleanup with explicit confirmation and matching preview counts rechecked inside a write transaction.
 - Account-isolated deletion of old positions/events; affected geofence state resets; newer history/devices remain.
 - Settings interface with preview-first flow, typed authorization, confirmation and backup warnings.
 - Regression tests for privacy isolation, no-change preview, stale counts and repeat cleanup.
+
+Verification: [push CI 41608724599](https://github.com/GoreeCloud/location/actions/runs/41608724599) and [PR CI 41608749686](https://github.com/GoreeCloud/location/actions/runs/41608749686) both passed **31 automated tests**, Python compilation and JavaScript syntax checks on 3 November 2026. [PR #10](https://github.com/GoreeCloud/location/pull/10) merged into main.
 
 Not an automatic retention schedule, backup removal, offline-device cleanup or certified secure erasure.
