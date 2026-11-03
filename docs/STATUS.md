@@ -9,7 +9,7 @@ The requested 22-category specification is the **target roadmap**, not a stateme
 | Self-hosted API and SQLite persistence | GitHub CI API tests pass; deployment not verified | `main.py`, `store.py`, Dockerfile |
 | Local account setup; sessions; logout | API test coverage passes; deployment not verified | `cli.py`, `main.py` |
 | Owner-isolated device registration and ingestion | API test coverage passes; deployment not verified | `main.py`, `tests/test_api.py` |
-| Location history, last-known position | API tests passed for initial history; cursor pagination added, CI verification pending | `GET /api/locations`, `GET /api/devices` |
+| Location history, last-known position | Cursor pagination and history tests passed in GitHub CI; deployment unverified | `GET /api/locations`, `GET /api/devices` |
 | Circular geofences and event history | API test coverage passes; deployment not verified | `places`, `geofence_state`, `events` |
 | Browser GPS capture on user action | Implemented in source, browser/device UX unverified | `static/app.js` |
 | Responsive dashboard and private coordinate visualization | Implemented in source, visual acceptance unverified | `static/index.html`, `styles.css` |
@@ -44,7 +44,6 @@ The requested 22-category specification is the **target roadmap**, not a stateme
 
 No real location data or credential is committed. This document should be updated only to reflect verified outcomes.
 
-
 ## Development cycle 2 — security and history
 
 **Implemented in source, not yet independently accepted:**
@@ -59,10 +58,12 @@ Verification: [GitHub Actions run 41603993957](https://github.com/GoreeCloud/loc
 
 ## Development cycle 3 — privacy erasure
 
-**Implemented in source; CI, browser and operational verification still pending:**
+**Implemented in source and covered by passing GitHub API tests; browser and operational verification still pending:**
 
 - Confirmed per-device erasure of points, geofence events and cached fence state while retaining device registration and upload key.
 - Related events removed when an individual GPS point is deleted; fence state reset to avoid stale transitions.
 - Owner-isolation and state-reset regression tests and a typed-confirmation web dialog.
+
+Verification: [GitHub Actions push run 41604428762](https://github.com/GoreeCloud/location/actions/runs/41604428762) and [pull-request run 41604457779](https://github.com/GoreeCloud/location/actions/runs/41604457779) completed successfully on 3 November 2026, with **14 API tests passing**, Python compilation and JavaScript syntax checks. [PR #5](https://github.com/GoreeCloud/location/pull/5) was merged into main. Browser screenshot acceptance, Internet-exposure review, restore drills and independent security assessment are still unverified.
 
 Live erasure does not automatically remove separate downloaded exports, backups, logs or offline device caches.
