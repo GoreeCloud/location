@@ -150,6 +150,19 @@
         <div class="section-intro"><h2>Yours to control.</h2><p class="muted">Location data belongs to you. Know what this preview does and does not do.</p></div>
         <div class="two-columns">
           <div class="card prose-card"><span class="eyebrow">DATA OWNERSHIP</span><h3>Private infrastructure</h3><p>Records are stored in your self-hosted SQLite database. Access requires an account, and device ingestion uses separate revocable tokens.</p><p>Public registration, advertising, third-party trackers, and automatic map-provider requests are disabled. Map tiles can be configured from your own tile server.</p><p>To remove individual positions, use the API. Database backups and account creation are managed by the server administrator.</p></div>
+          <div class="card prose-card retention-card">
+            <span class="eyebrow">HISTORY RETENTION</span><h3>Control old records</h3>
+            <p>Review older location history before choosing whether to delete it. This is a manual cleanup, not an automatic retention schedule.</p>
+            <label for="retention-days">Delete records older than (days)</label>
+            <input id="retention-days" type="number" min="1" max="36500" step="1" value="90" required>
+            <button id="retention-preview" class="button outline" type="button">Preview eligible records</button>
+            <p id="retention-summary" class="retention-summary" role="status" aria-live="polite">No preview yet.</p>
+            <label for="retention-confirm">Type DELETE_OLD_HISTORY to authorize deletion</label>
+            <input id="retention-confirm" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="DELETE_OLD_HISTORY" maxlength="18">
+            <button id="retention-purge" class="button danger-button" type="button">Permanently delete old records</button>
+            <p class="form-note">Only your account's old positions and geofence events are affected. Devices remain registered. Separate backups, downloaded exports and offline caches are not erased.</p>
+          </div>
           <div class="card prose-card"><span class="eyebrow">DEVELOPMENT PREVIEW</span><h3>Know the boundaries</h3><p>Browser location capture requires your permission and a secure context (HTTPS or localhost). It is manual, not a native background-tracking client.</p><p>Family circles, push alerts, crash detection, professional emergency dispatch, native apps, and fleet integrations are future work—not active safety services.</p><p>Do not use this preview for emergency response or critical real-time monitoring.</p></div>
         </div>
       </section>

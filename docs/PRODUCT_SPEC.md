@@ -28,7 +28,7 @@ The full scope below is categorized from the founder's 22-section product brief.
 
 **[Foundation]** Persistent chronological GPS points, last-known device position, owner-scoped timeline, individual deletion, per-device confirmed history erasure, timestamp-based history querying, and export.
 
-**[Planned]** Daily/weekly/monthly/yearly views, calendar navigation, full-history search and advanced filtering, visit/stop/overnight detection, trip grouping and transport modes, cross-device and consented family comparisons, GPS anomaly correction, bulk edits/deletion, configurable retention, import/migration, history backup/restore with recovery tests, automated historical route animations.
+**[Planned]** Daily/weekly/monthly/yearly views, calendar navigation, full-history search and advanced filtering, visit/stop/overnight detection, trip grouping and transport modes, cross-device and consented family comparisons, GPS anomaly correction, bulk edits/deletion, automatic retention schedules and age-based policies, import/migration, history backup/restore with recovery tests, automated historical route animations.
 
 ## 4. Places, geofencing, and location awareness
 
@@ -114,7 +114,7 @@ The full scope below is categorized from the founder's 22-section product brief.
 
 ## 17. Data collection, import, export and migration
 
-**[Foundation]** Authenticated JSON/HTTP ingestion, bounded owner-scoped CSV imports with duplicate skipping, full streaming GPX/GeoJSON exports, keyset-paginated GPS history and manual consistent SQLite snapshot, verification and restore-to-new-file commands.
+**[Foundation]** Authenticated JSON/HTTP ingestion, bounded owner-scoped CSV imports with duplicate skipping, full streaming GPX/GeoJSON exports, keyset-paginated GPS history and manual consistent SQLite snapshot, verification and restore-to-new-file commands; preview-first owner-controlled history cleanup.
 
 **[Planned]** Resumable bulk exports; Google Takeout/Timeline migration; GPX/FIT/TCX/KML/KMZ/GeoJSON/ZIP and specialized travel-history imports; OwnTracks/Traccar connectors; duplicate point detection; import progress/diagnostics/undo; geotagged photo imports; data mapping/correction, full-account export, incremental backups, portable format conversions, automated encrypted backups and operational recovery drills.
 
