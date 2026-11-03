@@ -17,7 +17,7 @@ The requested 22-category specification is the **target roadmap**, not a stateme
 | Full streaming GPX/GeoJSON exports | API test coverage passes; deployment not verified | `/api/export/*` |
 | Native Android / iOS / Linux app | Not implemented | Future milestone |
 | Family circles and consented live sharing | Not implemented | Future milestone |
-| Location import pipelines, photo timeline, exploration analytics | Not implemented | Future milestone |
+| Location import pipelines, photo timeline, exploration analytics | Bounded CSV import added in development source; broader provider imports and insights not implemented | Future milestone |
 | Fleet protocol adapters / specialized GPS hardware integrations | Not implemented | Future milestone |
 | Driving safety scoring and crash detection | Not implemented | Future milestone |
 | Emergency SOS dispatch and service-provider coordination | Not implemented | Future milestone |
@@ -67,3 +67,14 @@ Verification: [GitHub Actions run 41603993957](https://github.com/GoreeCloud/loc
 Verification: [GitHub Actions push run 41604428762](https://github.com/GoreeCloud/location/actions/runs/41604428762) and [pull-request run 41604457779](https://github.com/GoreeCloud/location/actions/runs/41604457779) completed successfully on 3 November 2026, with **14 API tests passing**, Python compilation and JavaScript syntax checks. [PR #5](https://github.com/GoreeCloud/location/pull/5) was merged into main. Browser screenshot acceptance, Internet-exposure review, restore drills and independent security assessment are still unverified.
 
 Live erasure does not automatically remove separate downloaded exports, backups, logs or offline device caches.
+
+## Development cycle 4 — initial CSV imports
+
+**Implemented in source; CI, visual and deployed-run verification pending:**
+
+- Owner-scoped text/csv import endpoint, explicitly restricted to a registered device.
+- 2 MiB and 5,000-record limits, strict GPS/timestamp/header validation, transactional import, and duplicate skipping.
+- Dedicated History interface for selecting the destination device and uploading a CSV file.
+- Test cases for successful import, repeated files, unauthorized accounts and malformed data.
+
+Provider-specific Takeout/GPX/FIT/TCX/GeoJSON imports, large-file progress, resilient concurrency guarantees and import undo remain planned.

@@ -114,9 +114,9 @@ The full scope below is categorized from the founder's 22-section product brief.
 
 ## 17. Data collection, import, export and migration
 
-**[Foundation]** Authenticated JSON/HTTP ingestion, owner-scoped full streaming GPX/GeoJSON exports, keyset-paginated GPS history and a manual consistent SQLite snapshot command.
+**[Foundation]** Authenticated JSON/HTTP ingestion, bounded owner-scoped CSV imports with duplicate skipping, full streaming GPX/GeoJSON exports, keyset-paginated GPS history and a manual consistent SQLite snapshot command.
 
-**[Planned]** Resumable bulk exports; Google Takeout/Timeline migration; GPX/FIT/TCX/KML/KMZ/CSV/GeoJSON/ZIP and travel-history imports; OwnTracks/Traccar connectors; duplicate point detection; import progress/diagnostics/undo; geotagged photo imports; data mapping/correction, full-account export, incremental backups, portable format conversions and safe restore.
+**[Planned]** Resumable bulk exports; Google Takeout/Timeline migration; GPX/FIT/TCX/KML/KMZ/GeoJSON/ZIP and specialized travel-history imports; OwnTracks/Traccar connectors; duplicate point detection; import progress/diagnostics/undo; geotagged photo imports; data mapping/correction, full-account export, incremental backups, portable format conversions and safe restore.
 
 ## 18. Privacy, security and data ownership
 
