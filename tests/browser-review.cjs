@@ -55,6 +55,16 @@ async function run(){
    await page.screenshot({path:path.join(evidence,v.name+"-overview-empty.png"),fullPage:true});
    await nav("settings").click();
    assert.equal(await page.locator("#view-settings").isVisible(),true);
+   const cardBoxes=await page.locator("#view-settings .prose-card").evaluateAll(nodes=>
+     nodes.map(node=>{const b=node.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width};}));
+   assert.equal(cardBoxes.length,3,"Three settings panels must remain visible");
+   if(v.width>=1191) {
+     assert.ok(Math.abs(cardBoxes[0].y-cardBoxes[2].y)<=2,"Desktop settings panels should form one balanced row");
+   } else if(v.width>680) {
+     assert.ok(cardBoxes[2].width>cardBoxes[0].width*1.5,"Tablet final panel should span both columns");
+   } else {
+     assert.ok(cardBoxes[2].y>cardBoxes[1].y,"Phone settings panels should stack vertically");
+   }
    await page.locator("#retention-preview").click();
    await page.locator("#retention-summary").getByText("0 GPS points").waitFor();
    const old=await page.locator("html").getAttribute("data-theme");
