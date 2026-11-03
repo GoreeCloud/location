@@ -70,11 +70,13 @@ Live erasure does not automatically remove separate downloaded exports, backups,
 
 ## Development cycle 4 — initial CSV imports
 
-**Implemented in source; CI, visual and deployed-run verification pending:**
+**Implemented in source and tested in GitHub CI; visual and deployed-run verification pending:**
 
 - Owner-scoped text/csv import endpoint, explicitly restricted to a registered device.
 - 2 MiB and 5,000-record limits, strict GPS/timestamp/header validation, transactional import, and duplicate skipping.
 - Dedicated History interface for selecting the destination device and uploading a CSV file.
 - Test cases for successful import, repeated files, unauthorized accounts and malformed data.
+
+Verification: [GitHub Actions push run 41605059607](https://github.com/GoreeCloud/location/actions/runs/41605059607) and [PR run 41605081825](https://github.com/GoreeCloud/location/actions/runs/41605081825) passed **16 API tests**, Python compilation, and JavaScript syntax checks on 3 November 2026. [PR #6](https://github.com/GoreeCloud/location/pull/6) merged into main. Browser rendering, real GPS hardware, large-file performance, and production safety remain unverified.
 
 Provider-specific Takeout/GPX/FIT/TCX/GeoJSON imports, large-file progress, resilient concurrency guarantees and import undo remain planned.
