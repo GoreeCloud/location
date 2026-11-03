@@ -14,6 +14,10 @@ The job saves synthetic screenshots covering login, empty overview, light-theme 
 
 Tests use a fresh random loopback port, a synthetic account, and a temporary SQLite database. The screenshots deliberately mask device ingestion secrets; test accounts and coordinates are fabricated. No public listener, map tile provider, real mobile device, production database or third-party network is involved. Browser engine downloading occurs only on the disposable GitHub CI runner.
 
+## Keyboard and modal semantics checkpoint
+
+The browser acceptance runner checks that Settings navigation can be activated with Enter, one-time token and erasure confirmation dialogs have names/descriptions, their actions can be operated from the keyboard, Escape cancels the erasure dialog, and Sign out can be activated with Enter. Screen-reader behavior, focus visibility and full keyboard tab-order review remain manual acceptance gates, not proven by these checks.
+
 ## Remaining acceptance gates
 
 - Inspect screenshots for typography, spacing, hierarchy, card density, responsive overflow, accessible focus styles, errors, and thematic consistency.
