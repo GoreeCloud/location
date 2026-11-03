@@ -10,7 +10,7 @@ Precise location history reveals home/work routines and sensitive activities. Av
 
 - scrypt password hashing with 16-byte per-user salt; 14-character minimum password.
 - Random 256-bit-class session and device tokens; only SHA-256 digests stored in SQLite.
-- Eight-hour sessions, explicit session revocation and in-memory per-username login throttling; device-specific token rotation without deleting history.
+- Eight-hour sessions, explicit logout revocation, 20-session per-account cap, bounded username/peer/global login attempt budgets, and device-specific token rotation without deleting history.
 - Separate owner-session and device-upload token scopes.
 - Pydantic validation, strict request schemas, bounded GPS numeric fields and timestamp checks.
 - Private-by-default API endpoints, account-scoped database queries.
@@ -22,8 +22,8 @@ Precise location history reveals home/work routines and sensitive activities. Av
 ## Not yet hardened for Internet exposure
 
 - Sessions are held in browser sessionStorage (XSS-sensitive); do not treat them as persistent MFA sessions.
-- Rate limiting is local-process only. Reverse proxies must enforce request limits and TLS.
-- No password reset, MFA, OIDC integration, IP allow-listing, distributed account lockout or user-session token rotation. Device ingestion token rotation exists.
+- Rate limiting is process-local only: 5 attempts/username, 40 attempts/network peer and 300 attempts/service within 5 minutes. Budgets count successful logins and have an in-memory cap. Proxy configuration and shared multi-instance rate limits are **not** implemented; enforce TLS and independent reverse-proxy protection.
+- No password reset, MFA, OIDC integration, IP allow-listing, distributed account lockout or user-session token rotation. Device ingestion token rotation exists; logging in beyond 20 active sessions revokes the account's oldest sessions.
 - No independent audit of proxy headers or shared tenant safety at scale.
 - No automated at-rest encryption. SQLite DB and manual snapshot files use mode 0600; use OS volume encryption and protected backups.
 - Database schemas have not yet been migrated under release controls.
@@ -63,3 +63,9 @@ The owner-authenticated device history erase operation deletes all positions, ge
 ## Import trust boundary
 
 CSV uploads require the owning user's authenticated session and a device ID that belongs to the account. Requests are bounded by byte size and record count; unknown fields, malformed coordinates and timestamp formats are rejected. No raw uploaded contents or imported GPS coordinates are included in API errors. Imports run only against the owner's SQLite data. The duplicate check is best-effort and is not a substitute for concurrency locking or a future storage uniqueness policy. Avoid uploading files from untrusted sources without review.
+
+## Authentication attempt controls
+
+Online password checks use a memory-bounded, thread-safe, process-local sliding-window budget reserved **before** the scrypt operation. It has independent per-username (5), per-ASGI-peer (40) and service-wide (300) limits during each five-minute window. Success clears the username-specific bucket but not peer/global counters. The peer identity comes from ASGI, not an arbitrary request header. In deployments using a reverse proxy, verify trusted-proxy configuration and apply additional gateway-side controls: this mechanism alone is not safe against distributed attacks.
+
+Unknown usernames are checked against a random dummy scrypt hash to reduce account-existence timing differences, but network/database effects remain and this is not a guarantee of constant-time operation. Generic authentication errors avoid disclosing which usernames exist. Per-account active sessions are capped at 20, automatically revoking the oldest token after additional sign-ins. MFA, persistent shared limits, recovery workflows and external identity require independent work.

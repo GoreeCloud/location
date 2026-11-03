@@ -98,3 +98,14 @@ The GitHub Actions workflow now pins `actions/checkout` v5 and `actions/setup-py
 Verification: [GitHub Actions push run 41606502423](https://github.com/GoreeCloud/location/actions/runs/41606502423) and [pull-request run 41606524731](https://github.com/GoreeCloud/location/actions/runs/41606524731) passed **21 API tests**, Python compilation and JavaScript syntax checks on 3 November 2026. [PR #7](https://github.com/GoreeCloud/location/pull/7) merged into main. A local smoke test also exercised snapshot, integrity verification, restore, stale-session revocation, permissions, and negative source/destination cases.
 
 No server has been redeployed. This is a local administrative recovery tool, not automatic failover or a production disaster-recovery certification.
+
+## Development cycle 6 — authentication protection
+
+**Implemented in the development worktree; CI and production acceptance pending:**
+
+- Bounded, thread-safe username/ASGI-peer/global attempt limits reserved before password verification.
+- Unknown usernames undergo the same scrypt verifier path using an unused dummy hash.
+- At most 20 live user sessions per account; older sessions are automatically revoked.
+- Unit and API tests cover expiration, concurrent admissions, memory bounds, unknown-user verifier calls, username isolation, and session caps.
+
+Limitations: these counters are process-local and ASGI peer identity depends on trusted proxy configuration. They do not amount to distributed abuse prevention, MFA, or production Internet security acceptance.

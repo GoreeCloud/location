@@ -16,8 +16,6 @@ import math
 import os
 from pathlib import Path
 import secrets
-import threading
-import time
 from xml.etree import ElementTree
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
@@ -26,7 +24,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from .store import connect, default_db_path, initialize, token_digest, utc_now, verify_password
+from .security import LoginAttemptLimiter
+from .store import connect, default_db_path, hash_password, initialize, token_digest, utc_now, verify_password
 
 
 class StrictModel(BaseModel):
@@ -104,8 +103,10 @@ def create_app(db_path: Path | None = None) -> FastAPI:
     app = FastAPI(title="GoreeCloud Location", version="0.1.0",
                   docs_url=None, redoc_url=None, openapi_url=None)
     bearer = HTTPBearer(auto_error=False)
-    attempts: dict[str, list[float]] = {}
-    attempts_lock = threading.Lock()
+    login_limiter = LoginAttemptLimiter()
+    # Always run scrypt for an unknown username to reduce account enumeration
+    # via response timing. No account uses this random dummy password hash.
+    dummy_password_hash = hash_password(secrets.token_urlsafe(32))
 
     def account(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
         if not creds or creds.scheme.lower() != "bearer" or len(creds.credentials) > 256:
@@ -206,32 +207,39 @@ def create_app(db_path: Path | None = None) -> FastAPI:
         return {"tile_template": tile, "self_hosted": True}
 
     @app.post("/api/auth/login")
-    def login(body: LoginIn):
-        name = body.username.lower()
-        now = time.monotonic()
-        with attempts_lock:
-            attempts[name] = [t for t in attempts.get(name, []) if now - t < 300]
-            if len(attempts[name]) >= 5:
-                api_error(429, "Too many attempts; try again later")
+    def login(body: LoginIn, request: Request):
+        # The bounded global/username/peer budget is reserved before running
+        # the expensive scrypt verifier, even for unknown usernames.
+        peer = request.client.host if request.client else "unknown"
+        if not login_limiter.allow(body.username, peer):
+            api_error(429, "Too many attempts; try again later")
         with connect(path) as db:
             record = db.execute(
                 "SELECT id, username, role, password_hash FROM accounts WHERE username=?",
                 (body.username,),
             ).fetchone()
-            ok = bool(record and verify_password(body.password, record["password_hash"]))
-            if not ok:
-                with attempts_lock:
-                    attempts.setdefault(name, []).append(time.monotonic())
+            match = verify_password(
+                body.password, record["password_hash"] if record else dummy_password_hash
+            )
+            if not record or not match:
                 api_error(401, "Invalid username or password")
-            with attempts_lock:
-                attempts.pop(name, None)
             token = secrets.token_urlsafe(32)
             expires = (datetime.now(timezone.utc) + timedelta(hours=8)).isoformat()
+            db.execute("DELETE FROM sessions WHERE expires_at<=?", (utc_now(),))
             db.execute(
                 "INSERT INTO sessions(token_hash,account_id,expires_at) VALUES(?,?,?)",
                 (token_digest(token), record["id"], expires),
             )
-            db.execute("DELETE FROM sessions WHERE expires_at<=?", (utc_now(),))
+            # Bound live sessions per account without a schema migration.
+            db.execute(
+                """DELETE FROM sessions WHERE token_hash IN (
+                       SELECT token_hash FROM sessions WHERE account_id=?
+                       ORDER BY expires_at DESC, token_hash DESC
+                       LIMIT -1 OFFSET 20
+                   )""",
+                (record["id"],),
+            )
+        login_limiter.clear_user(body.username)
         return {"access_token": token, "token_type": "bearer",
                 "expires_at": expires,
                 "user": {"id": record["id"], "username": record["username"], "role": record["role"]}}
