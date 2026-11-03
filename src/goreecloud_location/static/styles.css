@@ -275,3 +275,8 @@ td strong { color:var(--gc-text); }
   .item-card { flex-wrap: wrap; }
   .item-card .item-actions { flex-basis: 100%; padding-left: 48px; justify-content: flex-start; }
 }
+
+/* CSV import is deliberately explicit: choose a device before submitting. */
+.header-tools input[type="file"] { max-width: 185px; min-width: 145px; min-height: 44px; padding: 10px; font-size: 11px; }
+.header-tools { flex-wrap: wrap; }
+@media (max-width: 680px) { .header-tools input[type="file"] { max-width: 100%; } }

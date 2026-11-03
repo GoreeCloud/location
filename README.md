@@ -11,6 +11,7 @@
 - Login with short-lived, hashed-at-rest bearer sessions; logout revokes sessions.
 - User-owned devices (people, vehicles, pets, items, assets) with one-time, owner-rotatable ingestion tokens.
 - Authenticated HTTP location ingestion from browsers or compatible senders.
+- Account-scoped, bounded raw CSV imports with all-row validation, duplicate skipping and browser file selection.
 - Validated GPS latitude/longitude, accuracy, altitude, speed, heading, battery, timestamp.
 - Timestamp-ordered location history and last-known positions.
 - Circular places/geofences with arrival and departure events when reported GPS accuracy is sufficient.
@@ -21,7 +22,7 @@
 - Optional relative-path tile URL pointing to a **separately hosted** private tile server.
 - Docker/Compose deployment example bound to 127.0.0.1; automated API regression tests and CI configuration.
 
-**Not implemented:** Native Android/iOS/Linux clients; always-on mobile background GPS collection; family circles and location sharing; advanced geofences; telemetry/fleet protocol adapters; driving risk analysis; offline mobile capture; pet/item integrations; email/push/SMS alerts; crash/SOS response; professional emergency dispatch; local map tile server; migrations/imports beyond the current API; identity/financial assistance. See [features and milestones](docs/PRODUCT_SPEC.md) and [status](docs/STATUS.md).
+**Not implemented:** Native Android/iOS/Linux clients; always-on mobile background GPS collection; family circles and location sharing; advanced geofences; telemetry/fleet protocol adapters; driving risk analysis; offline mobile capture; pet/item integrations; email/push/SMS alerts; crash/SOS response; professional emergency dispatch; local map tile server; additional import formats and full migration utilities beyond the initial CSV endpoint; identity/financial assistance. See [features and milestones](docs/PRODUCT_SPEC.md) and [status](docs/STATUS.md).
 
 ## Quick start (Python 3.11+)
 
@@ -65,6 +66,8 @@ curl -X POST 'http://127.0.0.1:8123/api/ingest/DEVICE_ID' \
 The example coordinates are illustrative, not real user data. An ingestion token can only upload positions for its single associated device; it cannot read private history. Rotate the token using the **Rotate key** action in Devices, or POST `/api/devices/{id}/rotate-token`. Old tokens become invalid immediately and history is preserved; update your tracking client with the new key.
 
 On **Devices**, **Erase history** permanently deletes the selected device's GPS points and geofence events while retaining its registration and ingestion token. The UI requires typing ERASE to confirm. Earlier backups and downloaded exports remain separate copies; handle those under your data-retention policy.
+
+In **History**, select one device, choose a UTF-8 CSV file, and choose **Import CSV**. The CSV must contain latitude, longitude and timezone-aware recorded_at columns; optional columns are accuracy_m, altitude_m, speed_mps, heading_deg and battery_percent. A single import allows at most 5,000 rows and 2 MiB of data. All rows are checked before writing, and duplicate device/timestamp/coordinate points are skipped. Importing does not contact external providers.
 
 The authenticated API accepts sessions through `Authorization: Bearer SESSION_TOKEN` and provides:
 `/api/me`, `/api/summary`, `/api/devices`, `/api/locations`, `/api/places`, `/api/events`, `/api/export/gpx?device_id=N`, and `/api/export/geojson?device_id=N`. Exports stream the entire selected device history without a fixed point cap; use `/api/locations/page` for cursor-based history pagination. See [API reference](docs/API.md).

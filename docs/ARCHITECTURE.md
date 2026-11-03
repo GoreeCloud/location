@@ -65,3 +65,7 @@ No database migrations exist beyond initial idempotent schema creation. Treat sc
 - `GET /api/locations/page` performs keyset ordering on `(recorded_at DESC, id DESC)` with a cursor and per-request owner restrictions.
 - GPX and GeoJSON exports use streaming responses with separate owner-scoped SQLite reads instead of holding unbounded result arrays in RAM.
 - The `gclocation backup --destination NEW_FILE` command uses SQLite's live backup API, exclusive destination creation, and owner-only permissions. No automatic restore or scheduled backup is included.
+
+## CSV import path
+
+An account owner can submit a raw text/csv body to a registered device. The API bounds request streaming to 2 MiB and validates required headers, timestamp timezone and GPS bounds for up to 5,000 data rows before starting a SQLite write transaction. Validated points are processed chronologically with duplicate checks. A failed row aborts before any write; write-stage exceptions roll back the transaction. This initial importer is not suitable for unbounded historical migrations and does not ingest arbitrary CSV columns or external provider-specific archives.

@@ -466,6 +466,22 @@ function setupEvents() {
   $("history-device").addEventListener("change", (event) => {
     state.selectedHistoryDevice = event.target.value; renderHistory();
   });
+  $("import-csv").addEventListener("click", async () => {
+    const selected = state.selectedHistoryDevice;
+    const file = $("import-csv-file").files[0];
+    if (!selected) return showToast("Choose one device in the timeline filter before importing.");
+    if (!file) return showToast("Select a UTF-8 CSV file first.");
+    if (file.size > 2097152) return showToast("CSV import must be at most 2 MiB.");
+    try {
+      const response = await api("/api/devices/" + encodeURIComponent(selected) + "/import/csv", {
+        method: "POST", headers: {"Content-Type": "text/csv"}, body: file
+      });
+      $("import-csv-file").value = "";
+      await refresh();
+      showToast("Imported " + response.imported + " positions; skipped "
+        + response.skipped_duplicates + " duplicates.");
+    } catch (error) { showToast(error.message); }
+  });
   $("export-geojson").addEventListener("click", () => exportData("geojson"));
   $("export-gpx").addEventListener("click", () => exportData("gpx"));
   $("zoom-in").addEventListener("click", () => { state.zoomAdjust++; renderMap(); });

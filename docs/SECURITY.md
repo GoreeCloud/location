@@ -59,3 +59,7 @@ Use a private security channel with the repository owner rather than publishing 
 ## Erasure semantics
 
 The owner-authenticated device history erase operation deletes all positions, geofence events and current fence state for the selected device without removing its registration or ingestion token. The browser requires typing ERASE. Individual point deletion also removes same-time geofence events and resets the device's fence-state. Deleted live records may still exist in snapshots, logs, external exports and offline device caches. Automated purge of those residual copies is not implemented.
+
+## Import trust boundary
+
+CSV uploads require the owning user's authenticated session and a device ID that belongs to the account. Requests are bounded by byte size and record count; unknown fields, malformed coordinates and timestamp formats are rejected. No raw uploaded contents or imported GPS coordinates are included in API errors. Imports run only against the owner's SQLite data. The duplicate check is best-effort and is not a substitute for concurrency locking or a future storage uniqueness policy. Avoid uploading files from untrusted sources without review.

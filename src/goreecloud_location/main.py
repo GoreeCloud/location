@@ -9,6 +9,8 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 import base64
 import binascii
+import csv
+import io
 import json
 import math
 import os
@@ -22,7 +24,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Res
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .store import connect, default_db_path, initialize, token_digest, utc_now, verify_password
 
@@ -322,6 +324,77 @@ def create_app(db_path: Path | None = None) -> FastAPI:
             db.execute("DELETE FROM geofence_state WHERE device_id=?", (device_id,))
             db.execute("DELETE FROM points WHERE device_id=?", (device_id,))
         return Response(status_code=204)
+
+    @app.post("/api/devices/{device_id}/import/csv", status_code=201)
+    async def import_csv(device_id: int, request: Request, user=Depends(account)):
+        """Import a bounded UTF-8 CSV into one owned device, atomically.
+
+        The entire file is validated before any write. Files larger than 2 MiB
+        or containing more than 5,000 records are rejected. Historical records
+        are sorted before ingestion for deterministic transition processing.
+        """
+        if not request.headers.get("content-type", "").lower().startswith("text/csv"):
+            api_error(415, "Send raw UTF-8 CSV with Content-Type: text/csv")
+        with connect(path) as db:
+            device = owned_device(db, user["id"], device_id)
+
+        payload = bytearray()
+        async for chunk in request.stream():
+            if len(payload) + len(chunk) > 2_097_152:
+                api_error(413, "CSV is limited to 2 MiB")
+            payload.extend(chunk)
+        try:
+            content = bytes(payload).decode("utf-8-sig")
+        except UnicodeDecodeError:
+            api_error(422, "CSV must be UTF-8")
+        reader = csv.DictReader(io.StringIO(content, newline=""), strict=True)
+        allowed = {"latitude", "longitude", "recorded_at", "accuracy_m",
+                   "altitude_m", "speed_mps", "heading_deg", "battery_percent"}
+        required = {"latitude", "longitude", "recorded_at"}
+        try:
+            columns = reader.fieldnames
+            if (not columns or len(columns) != len(set(columns)) or
+                    not required.issubset(columns) or not set(columns).issubset(allowed)):
+                api_error(422, "CSV headers require latitude,longitude,recorded_at; optional GPS metadata only")
+
+            pending: list[tuple[str, PointIn]] = []
+            for row_number, row in enumerate(reader, start=2):
+                if row_number > 5001:
+                    api_error(413, "CSV is limited to 5,000 data rows")
+                if None in row:
+                    api_error(422, f"Row {row_number}: too many columns")
+                values = {key: val.strip() for key, val in row.items()
+                          if val is not None and val.strip() != ""}
+                if not required.issubset(values):
+                    api_error(422, f"Row {row_number}: missing coordinates or recorded_at")
+                try:
+                    point = PointIn.model_validate(values)
+                    stamp = timestamp_for(point.recorded_at)
+                except ValidationError:
+                    api_error(422, f"Row {row_number}: invalid GPS value")
+                pending.append((stamp, point))
+        except csv.Error:
+            api_error(422, "Malformed CSV document")
+        if not pending:
+            api_error(422, "CSV contains no location records")
+        pending.sort(key=lambda item: item[0])
+        imported = duplicates = generated_events = 0
+        with connect(path) as db:
+            owned_device(db, user["id"], device_id)
+            for stamp, point in pending:
+                seen = db.execute(
+                    """SELECT 1 FROM points WHERE device_id=? AND recorded_at=?
+                       AND latitude=? AND longitude=? LIMIT 1""",
+                    (device_id, stamp, point.latitude, point.longitude),
+                ).fetchone()
+                if seen:
+                    duplicates += 1
+                    continue
+                result = ingest(db, device, point)
+                imported += 1
+                generated_events += len(result["events"])
+        return {"device_id": device_id, "imported": imported,
+                "skipped_duplicates": duplicates, "geofence_events": generated_events}
 
     @app.post("/api/locations", status_code=201)
     def create_point(body: UserPointIn, user=Depends(account)):
