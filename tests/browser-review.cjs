@@ -40,7 +40,7 @@ async function run(){
   for(const v of [{name:"desktop",width:1440,height:900},{name:"tablet",width:820,height:1180},{name:"mobile",width:390,height:844}]){
    const ctx=await browser.newContext({viewport:{width:v.width,height:v.height},acceptDownloads:true});
    const page=await ctx.newPage(),errors=[],external=[];
-   const nav=(name)=>page.locator((v.width<=680?".mobile-nav":".sidebar")+" [data-nav="+name+"]");
+   const nav=(name)=>page.locator((v.width<=680?".mobile-nav":".sidebar")+" button[data-nav="+name+"]");
    page.on("pageerror",e=>errors.push(e.message));
    page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
    page.on("request",q=>{const u=q.url();if(!u.startsWith(url+"/")&&!u.startsWith("data:")&&!u.startsWith("blob:"))external.push(u);});
