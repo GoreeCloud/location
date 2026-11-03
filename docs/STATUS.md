@@ -23,14 +23,14 @@ The requested 22-category specification is the **target roadmap**, not a stateme
 | Emergency SOS dispatch and service-provider coordination | Not implemented | Future milestone |
 | Pet/item networks and Bluetooth tracking | Not implemented | Future milestone |
 | External notification gateways and automation connectors | Not implemented | Future milestone |
-| Security hardening, scale, backup restore testing | Device-key rotation, owner-only database modes and manual backups in source; full hardening and restore validation pending | `docs/SECURITY.md` |
+| Security hardening, scale, backup restore testing | Device-key rotation, owner-only database modes and manual backups in source; full hardening and production restore acceptance pending | `docs/SECURITY.md` |
 | GC UI acceptance and MIPS integrations | Specification reviewed; not validated | GC UI source authority |
 
 ### Next priorities
 
 1. Extend automated checks with browser and deployment smoke tests.
 2. Perform secure external access review; add account/session rotation and additional throttling.
-3. Implement imports, retention controls, restore validation and resumable exports; keyset history pagination and manual consistent backups now exist in source.
+3. Implement additional imports, retention controls, full production recovery drills and resumable exports; keyset pagination, manual snapshots and restore-to-new-file now exist in source.
 4. Complete location map tiling and geocoding integration using owner-controlled services.
 5. Add private multiuser circles with explicit consent and independently reviewed authorization.
 6. Add native mobile background tracking after platform-specific security review.
@@ -84,3 +84,15 @@ Provider-specific Takeout/GPX/FIT/TCX/GeoJSON imports, large-file progress, resi
 ## CI supply-chain maintenance
 
 The GitHub Actions workflow now pins `actions/checkout` v5 and `actions/setup-python` v6 to the verified official commit SHAs, both using Node 24, with a 12-minute job timeout. [GitHub Actions run 41605346798](https://github.com/GoreeCloud/location/actions/runs/41605346798) completed successfully on 3 November 2026: **16 API tests passed**, Python compilation and JavaScript syntax checks passed. Seven dependency/test framework deprecation warnings remain; these are not equivalent to a vulnerability audit or production acceptance.
+
+
+## Development cycle 5 — backup verification and recovery
+
+**Implemented in the development worktree; awaiting remote CI and runtime acceptance:**
+
+- Read-only SQLite snapshot verification: header, full integrity, foreign keys, and required GoreeCloud Location schema.
+- Operator-only restore to a new path; existing files are never overwritten.
+- Restored account sessions are cleared, preventing stale session replay; device ingestion credentials are preserved.
+- Recovery test cases cover history restoration, authentication, corruption, incompatible schemas, permissions, symlinks, and refusal to overwrite.
+
+No server has been redeployed. This is a local administrative recovery tool, not automatic failover or a production disaster-recovery certification.

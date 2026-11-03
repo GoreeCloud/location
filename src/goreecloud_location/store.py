@@ -5,7 +5,7 @@ No account is created automatically on service startup.
 """
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import contextmanager, closing
 from datetime import datetime, timezone
 import hashlib
 import os
@@ -15,6 +15,7 @@ import secrets
 import sqlite3
 import stat
 from typing import Iterator
+from urllib.parse import quote
 
 USERNAME = re.compile(r"^[A-Za-z0-9_.-]{3,32}$")
 
@@ -190,4 +191,71 @@ def backup_database(path: Path, destination: Path) -> None:
         destination.chmod(0o600)
     except Exception:
         destination.unlink(missing_ok=True)
+        raise
+
+
+
+# A consistent backup is useful only if it can be opened and restored.
+# Verify expected relations without returning private account/device information.
+RECOVERY_TABLES = frozenset({
+    "accounts", "sessions", "devices", "points", "places",
+    "geofence_state", "events",
+})
+
+
+def verify_database(path: Path) -> None:
+    """Read-only integrity and schema checks on a candidate recovery snapshot.
+
+    Never initializes or writes to the candidate. The caller controls its
+    source and should treat the file as untrusted until verification succeeds.
+    """
+    path = Path(path)
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("Database candidate must be a regular non-symlink file.")
+    try:
+        with path.open("rb") as header:
+            if header.read(16) != b"SQLite format 3\x00":
+                raise ValueError("File is not a SQLite database.")
+        source_uri = "file:" + quote(str(path.absolute()), safe="/") + "?mode=ro"
+        with closing(sqlite3.connect(source_uri, uri=True, timeout=10)) as db:
+            db.execute("PRAGMA trusted_schema=OFF")
+            db.execute("PRAGMA query_only=ON")
+            integrity = db.execute("PRAGMA integrity_check").fetchone()
+            if not integrity or integrity[0] != "ok":
+                raise ValueError("SQLite integrity check failed.")
+            if db.execute("PRAGMA foreign_key_check").fetchone():
+                raise ValueError("SQLite foreign key integrity check failed.")
+            tables = {
+                name for (name,) in db.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                )
+            }
+            if not RECOVERY_TABLES.issubset(tables):
+                raise ValueError("Not a compatible GoreeCloud Location database.")
+    except sqlite3.DatabaseError as exc:
+        raise ValueError("Database verification failed.") from exc
+
+
+def restore_database(source: Path, destination: Path) -> None:
+    """Restore a verified snapshot to a NEW database, never overwrite a live one.
+
+    User sessions are invalidated in the restored copy to prevent replay of
+    sessions that might have been revoked since the snapshot was captured.
+    Registered device ingestion keys remain intact so trackers can reconnect.
+    The operator must deliberately switch the service to the new database.
+    """
+    source, destination = Path(source), Path(destination)
+    verify_database(source)
+    backup_completed = False
+    try:
+        backup_database(source, destination)
+        backup_completed = True
+        with closing(sqlite3.connect(destination, timeout=10)) as db:
+            db.execute("PRAGMA foreign_keys=ON")
+            db.execute("DELETE FROM sessions")
+            db.commit()
+        verify_database(destination)
+    except Exception:
+        if backup_completed:
+            destination.unlink(missing_ok=True)
         raise

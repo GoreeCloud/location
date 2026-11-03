@@ -27,7 +27,7 @@ Precise location history reveals home/work routines and sensitive activities. Av
 - No independent audit of proxy headers or shared tenant safety at scale.
 - No automated at-rest encryption. SQLite DB and manual snapshot files use mode 0600; use OS volume encryption and protected backups.
 - Database schemas have not yet been migrated under release controls.
-- No penetration test, native mobile client audit, or production load/recovery validation.
+- No penetration test, native mobile client audit, or production load/recovery validation. Local synthetic-fixture recovery testing does not certify disaster recovery.
 - The API may accept historical GPS points; never treat API-reported positions as proof of a person's physical presence.
 
 ## Deployment checklist
@@ -50,7 +50,7 @@ Precise location history reveals home/work routines and sensitive activities. Av
 - **Cross-account access:** test positive/negative ownership checks across every new endpoint.
 - **Location exfiltration:** avoid third-party map requests by default; opt in only to owner-controlled tile services.
 - **Web injection:** never use untrusted values as markup; use textContent, CSP, input validation, and no scripts from untrusted origins.
-- **Data loss:** an operator-run WAL-consistent backup command exists; automated encrypted backups, tested restore drills and migrations remain planned.
+- **Data loss:** WAL-consistent backup, read-only verification and restore-to-new-file commands are provided. Production restoration drills, automated encrypted backups, retention and migrations remain planned.
 
 ### Vulnerability reporting
 

@@ -94,4 +94,4 @@ Stop using raw file copies while SQLite is active. Instead, run:
 gclocation backup --destination ~/private-location-2026-11-03.sqlite
 ```
 
-The destination directory must already exist and the backup file must be new; existing files are never overwritten. The output uses owner-only file permissions. Encrypt and safeguard backups separately. A restore command and end-to-end disaster recovery verification are not yet available.
+The destination directory must already exist and the backup file must be new; existing files are never overwritten. The output uses owner-only file permissions. Encrypt and safeguard backups separately. An owner-controlled recovery command restores to a NEW path and never overwrites the current database. See [recovery runbook](docs/RECOVERY.md) for verification, restore, and session handling; production recovery drills remain unverified.
