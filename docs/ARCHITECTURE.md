@@ -69,3 +69,7 @@ No database migrations exist beyond initial idempotent schema creation. Treat sc
 ## CSV import path
 
 An account owner can submit a raw text/csv body to a registered device. The API bounds request streaming to 2 MiB and validates required headers, timestamp timezone and GPS bounds for up to 5,000 data rows before starting a SQLite write transaction. Validated points are processed chronologically with duplicate checks. A failed row aborts before any write; write-stage exceptions roll back the transaction. This initial importer is not suitable for unbounded historical migrations and does not ingest arbitrary CSV columns or external provider-specific archives.
+
+## Login and session resource budgets
+
+The authentication module uses a bounded, process-local sliding-window limiter with separate username, ASGI peer and global budgets. The initial limits are 5/40/300 attempts in five minutes, with an LRU cap on memory buckets. A random in-memory dummy scrypt hash prevents unknown-user requests from skipping the expensive password verifier. Successful login clears a username's attempt bucket, but peer/global throttles continue to apply. Expired sessions are purged on successful login; no more than 20 active sessions per user are retained. This is not a multi-worker or multi-server rate limit, nor a replacement for TLS, trusted proxy configuration, MFA or a security review.

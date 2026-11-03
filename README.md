@@ -8,7 +8,7 @@
 ## What works today
 
 - Private accounts created by a local administrator; password hashes use scrypt.
-- Login with short-lived, hashed-at-rest bearer sessions; logout revokes sessions.
+- Login with short-lived, hashed-at-rest bearer sessions; logout revokes sessions. At most 20 live sessions per account; older tokens are revoked automatically.
 - User-owned devices (people, vehicles, pets, items, assets) with one-time, owner-rotatable ingestion tokens.
 - Authenticated HTTP location ingestion from browsers or compatible senders.
 - Account-scoped, bounded raw CSV imports with all-row validation, duplicate skipping and browser file selection.
@@ -19,6 +19,7 @@
 - Explicit browser location capture (requires user permission + HTTPS or localhost).
 - Owner-scoped *streaming, complete* GeoJSON and GPX exports, cursor-paginated history, individual deletion, confirmed per-device history erasure, and device/place deletion.
 - Zero-dependency static browser UI and no mandatory external map requests.
+- Bounded process-local account/peer/global login attempt budgets with uniform password hashing for unknown accounts.
 - Optional relative-path tile URL pointing to a **separately hosted** private tile server.
 - Docker/Compose deployment example bound to 127.0.0.1; automated API regression tests and CI configuration.
 
