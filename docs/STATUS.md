@@ -155,3 +155,13 @@ Verification: [GitHub Actions run 41638054089](https://github.com/GoreeCloud/loc
 Visual evidence: [18 synthetic screenshots, masked device tokens](https://github.com/GoreeCloud/location/actions/runs/41638054089) retained as a seven-day GitHub Actions artifact. Screenshots of desktop login/overview/settings/dialog, phone login/settings/tracked overview, and tablet settings were manually examined. The interface is visibly styled and responsive; remaining design observations include an uneven second row in the tablet/desktop settings grid, and further keyboard/screen-reader, high contrast, focus and physical-device acceptance. Do not interpret green CI as complete premium design compliance.
 
 Even successful browser CI does not establish completed GC UI visual acceptance, keyboard/screen-reader quality, native mobile clients or production deployment.
+
+## Development cycle 10 — settings composition
+
+**Candidate improvement awaiting CI and screenshot review:**
+
+- Rebalance three Privacy & settings cards to one row on wide desktop screens, a full-width final information card on tablet screens, and a vertical stack on phones.
+- Include layout geometry checks in the Chromium browser regression suite for all three supported viewport sizes.
+- Document observed screenshot quality and remaining acceptance criteria in [visual audit](VISUAL_AUDIT_2026-11-03.md).
+
+No native mobile functionality or production deployment is implied. Full GC UI visual acceptance still requires further verification.
