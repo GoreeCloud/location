@@ -55,3 +55,7 @@ Precise location history reveals home/work routines and sensitive activities. Av
 ### Vulnerability reporting
 
 Use a private security channel with the repository owner rather than publishing sensitive exploit details or credentials in a public issue.
+
+## Erasure semantics
+
+The owner-authenticated device history erase operation deletes all positions, geofence events and current fence state for the selected device without removing its registration or ingestion token. The browser requires typing ERASE. Individual point deletion also removes same-time geofence events and resets the device's fence-state. Deleted live records may still exist in snapshots, logs, external exports and offline device caches. Automated purge of those residual copies is not implemented.

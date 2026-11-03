@@ -13,11 +13,12 @@ All routes below use JSON unless otherwise noted. There are **no public location
 | GET | `/api/devices` | User session | Owner devices with last positions |
 | POST | `/api/devices` | User session | Create device; receive ingestion token once |
 | POST | `/api/devices/{id}/rotate-token` | Owner session | Issue new device upload token, revoke previous token, preserve history |
+| DELETE | `/api/devices/{id}/history` | Owner session | Delete device points, events and fence state; retain device/key |
 | DELETE | `/api/devices/{id}` | Owner session | Delete device and all its positions/events |
 | GET | `/api/locations?device_id=N&limit=300` | User session | Latest positions (max 1,000); backwards-compatible list |
 | GET | `/api/locations/page?device_id=N&limit=100&cursor=...` | User session | Keyset history page with `items`, `has_more`, and `next_cursor` |
 | POST | `/api/locations` | User session | Record point for owner device |
-| DELETE | `/api/locations/{id}` | Owner session | Delete individual point |
+| DELETE | `/api/locations/{id}` | Owner session | Delete point and matching timestamp events; reset fence state |
 | POST | `/api/ingest/{device_id}` | Device token | Upload point only, never read |
 | GET | `/api/places` | User session | Owner circular geofences |
 | POST | `/api/places` | User session | Create circular geofence |

@@ -26,7 +26,7 @@ The full scope below is categorized from the founder's 22-section product brief.
 
 ## 3. Location history and timelines
 
-**[Foundation]** Persistent chronological GPS points, last-known device position, owner-scoped timeline, individual deletion, timestamp-based history querying, and export.
+**[Foundation]** Persistent chronological GPS points, last-known device position, owner-scoped timeline, individual deletion, per-device confirmed history erasure, timestamp-based history querying, and export.
 
 **[Planned]** Daily/weekly/monthly/yearly views, calendar navigation, full-history search and advanced filtering, visit/stop/overnight detection, trip grouping and transport modes, cross-device and consented family comparisons, GPS anomaly correction, bulk edits/deletion, configurable retention, import/migration, history backup/restore with recovery tests, automated historical route animations.
 
