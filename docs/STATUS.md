@@ -170,9 +170,11 @@ No native mobile functionality or production deployment is implied. Full GC UI v
 
 ## Development cycle 11 — keyboard and modal accessibility
 
-**Candidate change awaiting GitHub CI:**
+**Implemented, with API and Chromium browser CI passing:**
 
 - Give the one-time device-token modal and history-erasure dialog explicit accessible names and descriptions.
 - Use real keyboard Enter activation for Settings navigation, dialog Done action and Sign out.
 - Assert Escape safely dismisses the erasure dialog without deleting data, and token text is cleared after closing.
-- Retain explicit limits: this is an automated Chromium keyboard smoke check, not a complete screen-reader or WCAG audit.
+- Verification: [GitHub Actions run 41639265596](https://github.com/GoreeCloud/location/actions/runs/41639265596) passed the **31 API tests** plus real Chromium keyboard/dialog interaction journeys at desktop, tablet and phone sizes; [PR #13](https://github.com/GoreeCloud/location/pull/13) merged to main. The tests check accessible dialog names/descriptions and safe Escape dismissal; no production data was changed.
+
+Retain explicit limits: this is an automated Chromium keyboard smoke check, not a complete screen-reader or WCAG audit.
