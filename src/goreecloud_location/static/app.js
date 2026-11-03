@@ -138,6 +138,20 @@ function renderEvents() {
                         new Date(e.recorded_at).toLocaleDateString(), e.kind === "arrival" ? "↘" : "↗"));
   }
 }
+function confirmEraseHistory(name) {
+  return new Promise((resolve) => {
+    const dialog = $("erase-dialog");
+    const phrase = $("erase-confirm");
+    dialog.returnValue = "cancel";
+    phrase.value = "";
+    text("erase-device-name", name);
+    dialog.addEventListener("close", () => {
+      resolve(dialog.returnValue === "erase" && phrase.value === "ERASE");
+    }, {once:true});
+    dialog.showModal();
+    requestAnimationFrame(() => phrase.focus());
+  });
+}
 function renderDevices() {
   const node = $("devices-list");
   node.replaceChildren();
@@ -164,7 +178,20 @@ function renderDevices() {
         $("secret-dialog").showModal();
       } catch (error) { showToast(error.message); }
     });
-    row.append(avatar, info, small, rotate);
+    const erase = elt("button", "tiny-action danger", "Erase history");
+    erase.type = "button";
+    erase.setAttribute("aria-label", "Permanently erase tracking history for " + d.name);
+    erase.addEventListener("click", async () => {
+      if (!await confirmEraseHistory(d.name)) return;
+      try {
+        await api("/api/devices/" + d.id + "/history", {method:"DELETE"});
+        await refresh();
+        showToast("History and place events erased for " + d.name + ". Device remains registered.");
+      } catch (error) { showToast(error.message); }
+    });
+    const actions = elt("div", "item-actions");
+    actions.append(rotate, erase);
+    row.append(avatar, info, small, actions);
     node.append(row);
   }
 }

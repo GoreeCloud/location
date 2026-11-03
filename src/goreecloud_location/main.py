@@ -310,6 +310,19 @@ def create_app(db_path: Path | None = None) -> FastAPI:
             db.execute("DELETE FROM devices WHERE id=?", (device_id,))
         return Response(status_code=204)
 
+    @app.delete("/api/devices/{device_id}/history", status_code=204)
+    def clear_device_history(device_id: int, user=Depends(account)):
+        """Permanently erase one owned device's points, events and fence state.
+
+        The registered device and its credential remain intact.
+        """
+        with connect(path) as db:
+            owned_device(db, user["id"], device_id)
+            db.execute("DELETE FROM events WHERE device_id=?", (device_id,))
+            db.execute("DELETE FROM geofence_state WHERE device_id=?", (device_id,))
+            db.execute("DELETE FROM points WHERE device_id=?", (device_id,))
+        return Response(status_code=204)
+
     @app.post("/api/locations", status_code=201)
     def create_point(body: UserPointIn, user=Depends(account)):
         with connect(path) as db:
@@ -409,13 +422,22 @@ def create_app(db_path: Path | None = None) -> FastAPI:
     @app.delete("/api/locations/{point_id}", status_code=204)
     def delete_point(point_id: int, user=Depends(account)):
         with connect(path) as db:
-            cur = db.execute(
-                """DELETE FROM points WHERE id=? AND device_id IN
-                   (SELECT id FROM devices WHERE account_id=?)""",
+            point = db.execute(
+                """SELECT p.device_id, p.recorded_at FROM points p
+                   JOIN devices d ON d.id=p.device_id
+                   WHERE p.id=? AND d.account_id=?""",
                 (point_id, user["id"]),
-            )
-            if not cur.rowcount:
+            ).fetchone()
+            if point is None:
                 api_error(404, "Location not found")
+            db.execute("DELETE FROM points WHERE id=?", (point_id,))
+            # Events reveal an inferred place visit; remove those attached to
+            # the deleted timestamp and reset state to avoid stale transitions.
+            db.execute(
+                "DELETE FROM events WHERE device_id=? AND recorded_at=?",
+                (point["device_id"], point["recorded_at"]),
+            )
+            db.execute("DELETE FROM geofence_state WHERE device_id=?", (point["device_id"],))
         return Response(status_code=204)
 
     @app.get("/api/places")

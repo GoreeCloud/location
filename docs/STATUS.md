@@ -55,4 +55,14 @@ No real location data or credential is committed. This document should be update
 - Consistent SQLite snapshot command and owner-only database/backup file permissions.
 - Device key rotation exposed in the web interface with a clear reconfiguration warning.
 
-Regression tests and current CI evidence must be recorded after the corresponding remote workflow finishes. No production deployment or GPS hardware integration is implied.
+Verification: [GitHub Actions run 41603993957](https://github.com/GoreeCloud/location/actions/runs/41603993957) passed 12 API tests, Python compilation, and JavaScript syntax checks on 3 November 2026. Browser rendering, production exposure and restoration remain unverified. No production deployment or GPS hardware integration is implied.
+
+## Development cycle 3 — privacy erasure
+
+**Implemented in source; CI, browser and operational verification still pending:**
+
+- Confirmed per-device erasure of points, geofence events and cached fence state while retaining device registration and upload key.
+- Related events removed when an individual GPS point is deleted; fence state reset to avoid stale transitions.
+- Owner-isolation and state-reset regression tests and a typed-confirmation web dialog.
+
+Live erasure does not automatically remove separate downloaded exports, backups, logs or offline device caches.

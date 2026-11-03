@@ -55,6 +55,8 @@ Each location point is checked against the owner's saved circular places using H
 
 ## Development and rollback
 
+Individual point deletion removes that device's geofence events for the same recorded timestamp and resets fence state. Full device-history erasure deletes points, all events and fence state while preserving the registered device and upload key. Erasure from the live database does not remove downloaded exports or offline backups.
+
 No database migrations exist beyond initial idempotent schema creation. Treat schema changes as potentially destructive; take a consistent backup and test migration/rollback on a copy before upgrades. Keep initial user data private. Repository publication does not imply a service has been deployed.
 
 ## Follow-up interfaces

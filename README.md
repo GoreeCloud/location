@@ -16,7 +16,7 @@
 - Circular places/geofences with arrival and departure events when reported GPS accuracy is sufficient.
 - Responsive dark/light GoreeCloud UI dashboard with coordinate-map view, route overlays, device cards, timeline, places, and recent events.
 - Explicit browser location capture (requires user permission + HTTPS or localhost).
-- Owner-scoped *streaming, complete* GeoJSON and GPX exports, cursor-paginated history, record deletion, device/place deletion.
+- Owner-scoped *streaming, complete* GeoJSON and GPX exports, cursor-paginated history, individual deletion, confirmed per-device history erasure, and device/place deletion.
 - Zero-dependency static browser UI and no mandatory external map requests.
 - Optional relative-path tile URL pointing to a **separately hosted** private tile server.
 - Docker/Compose deployment example bound to 127.0.0.1; automated API regression tests and CI configuration.
@@ -63,6 +63,8 @@ curl -X POST 'http://127.0.0.1:8123/api/ingest/DEVICE_ID' \
 ```
 
 The example coordinates are illustrative, not real user data. An ingestion token can only upload positions for its single associated device; it cannot read private history. Rotate the token using the **Rotate key** action in Devices, or POST `/api/devices/{id}/rotate-token`. Old tokens become invalid immediately and history is preserved; update your tracking client with the new key.
+
+On **Devices**, **Erase history** permanently deletes the selected device's GPS points and geofence events while retaining its registration and ingestion token. The UI requires typing ERASE to confirm. Earlier backups and downloaded exports remain separate copies; handle those under your data-retention policy.
 
 The authenticated API accepts sessions through `Authorization: Bearer SESSION_TOKEN` and provides:
 `/api/me`, `/api/summary`, `/api/devices`, `/api/locations`, `/api/places`, `/api/events`, `/api/export/gpx?device_id=N`, and `/api/export/geojson?device_id=N`. Exports stream the entire selected device history without a fixed point cap; use `/api/locations/page` for cursor-based history pagination. See [API reference](docs/API.md).

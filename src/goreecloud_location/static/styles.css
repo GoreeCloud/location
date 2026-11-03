@@ -267,3 +267,11 @@ td strong { color:var(--gc-text); }
 .intro-row { flex-wrap: wrap; }
 .capture-device { width: min(205px, 100%); margin-left: auto; }
 @media (max-width: 680px) { .capture-device { width: 100%; margin-left: 0; } }
+
+.item-actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+.tiny-action.danger { border-color: rgba(233,108,126,.32); color: #ee8898; }
+.tiny-action.danger:hover { background: rgba(233,108,126,.1); border-color: #ee8898; }
+@media (max-width: 680px) {
+  .item-card { flex-wrap: wrap; }
+  .item-card .item-actions { flex-basis: 100%; padding-left: 48px; justify-content: flex-start; }
+}
