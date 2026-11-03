@@ -294,3 +294,12 @@ html[data-theme="light"] .button.danger-button { color: #fff; }
   .mobile-nav { padding-left: 2px; padding-right: 2px; }
   .mobile-nav button { font-size: 9px; }
 }
+
+/* GC UI: balanced privacy/settings composition on desktop and tablet. */
+@media (min-width: 1191px) {
+  #view-settings .two-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 681px) and (max-width: 1190px) {
+  #view-settings .two-columns > .prose-card:last-child { grid-column: 1 / -1; }
+  #view-settings .two-columns > .prose-card:last-child p { max-width: 75ch; }
+}
