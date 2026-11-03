@@ -21,7 +21,7 @@
 - Zero-dependency static browser UI and no mandatory external map requests.
 - Bounded process-local account/peer/global login attempt budgets with uniform password hashing for unknown accounts.
 - Optional relative-path tile URL pointing to a **separately hosted** private tile server.
-- Docker/Compose deployment example bound to 127.0.0.1; automated API regression tests and CI configuration.
+- Docker/Compose deployment example bound to 127.0.0.1; automated API regressions, a synthetic-data loopback HTTP startup smoke test, and CI configuration.
 
 **Not implemented:** Native Android/iOS/Linux clients; always-on mobile background GPS collection; family circles and location sharing; advanced geofences; telemetry/fleet protocol adapters; driving risk analysis; offline mobile capture; pet/item integrations; email/push/SMS alerts; crash/SOS response; professional emergency dispatch; local map tile server; additional import formats and full migration utilities beyond the initial CSV endpoint; identity/financial assistance. See [features and milestones](docs/PRODUCT_SPEC.md) and [status](docs/STATUS.md).
 

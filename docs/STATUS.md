@@ -111,3 +111,15 @@ No server has been redeployed. This is a local administrative recovery tool, not
 Verification: [push CI 41607236405](https://github.com/GoreeCloud/location/actions/runs/41607236405) and [PR CI 41607266407](https://github.com/GoreeCloud/location/actions/runs/41607266407) passed **27 automated tests**, Python compilation and JavaScript syntax on 3 November 2026; [PR #8](https://github.com/GoreeCloud/location/pull/8) merged to main. A local standalone limiter smoke test also passed.
 
 Limitations: these counters are process-local and ASGI peer identity depends on trusted proxy configuration. They do not amount to distributed abuse prevention, MFA, or production Internet security acceptance.
+
+
+## Development cycle 7 — real HTTP loopback smoke
+
+**Implementation pending GitHub CI verification:**
+
+- Start the real Uvicorn CLI service on a randomly allocated loopback port against a synthetic temporary database.
+- Exercise health, a private-by-default endpoint, disabled OpenAPI, static dashboard resources, login, device creation, a GPS point, paginated history and logout over real HTTP.
+- Assert that the CLI refuses non-loopback binding unless the operator provides the explicit exposure-warning flag.
+- Always terminate the test process and avoid live customer data.
+
+This validates a development server's loopback startup and request wiring only. It is not a native mobile, browser screenshot, TLS, proxy, Docker, load or production deployment acceptance test.
