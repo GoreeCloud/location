@@ -201,6 +201,7 @@ td strong { color:var(--gc-text); }
 .secret-box { border-radius:12px; background:var(--gc-deeper); border:1px solid var(--gc-outline); padding:14px; overflow-wrap:anywhere; color:var(--gc-brand); font-size:12px; }
 .dialog-actions { display:flex; gap:9px; justify-content:flex-end; margin-top:22px; }
 .mobile-nav { display:none; }
+.mobile-signout { display:none; }
 @media(max-width:1190px) {
   .dashboard-columns { grid-template-columns:minmax(0,1.3fr) minmax(240px,.85fr); }
   .metrics { gap:11px; }
@@ -232,6 +233,7 @@ td strong { color:var(--gc-text); }
   .auth-card h2 { font-size:30px; }
   .shell { display:block; padding-bottom:76px; }
   .sidebar { display:none; }
+  .mobile-signout { display:inline-flex; }
   .mobile-nav { position:fixed; z-index:15; bottom:0; left:0; right:0; display:flex; justify-content:space-around; padding:8px 5px max(8px,env(safe-area-inset-bottom)); background:var(--gc-surface); border-top:1px solid var(--gc-outline); box-shadow:0 -10px 30px rgba(0,0,0,.12); }
   .mobile-nav button { color:var(--gc-text-soft); background:transparent; border:0; display:grid; place-items:center; gap:1px; flex:1; min-height:50px; font-size:10px; }
   .mobile-nav button.active { color:var(--gc-brand); }
@@ -287,3 +289,8 @@ td strong { color:var(--gc-text); }
 .button.danger-button { border-color: #df8a99; color: #ffe4e8; background: #8b3145; }
 .button.danger-button:hover { background: #a33950; }
 html[data-theme="light"] .button.danger-button { color: #fff; }
+
+@media (max-width: 380px) {
+  .mobile-nav { padding-left: 2px; padding-right: 2px; }
+  .mobile-nav button { font-size: 9px; }
+}

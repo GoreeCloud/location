@@ -21,3 +21,31 @@ jobs:
         run: python -m pytest
       - name: Check web JavaScript syntax
         run: node --check src/goreecloud_location/static/app.js
+
+  browser:
+    name: Browser interactions and synthetic visual snapshots
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - name: Install isolated browser test dependencies
+        run: |
+          python -m pip install --disable-pip-version-check '.[test]'
+          npm install --no-save --ignore-scripts --no-audit --no-fund playwright@1.64.1
+          npx playwright install --with-deps chromium
+      - name: Run three-viewport browser interaction checks
+        env:
+          LOCATION_PYTHON: python
+          LOCATION_EVIDENCE: browser-evidence
+        run: node tests/browser-review.cjs
+      - name: Preserve synthetic screenshots for visual review
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: goreecloud-location-browser-evidence
+          path: browser-evidence/
+          if-no-files-found: warn
+          retention-days: 7

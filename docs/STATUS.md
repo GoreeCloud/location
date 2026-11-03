@@ -140,3 +140,14 @@ This validates a development server's loopback startup and request wiring only. 
 Verification: [push CI 41608724599](https://github.com/GoreeCloud/location/actions/runs/41608724599) and [PR CI 41608749686](https://github.com/GoreeCloud/location/actions/runs/41608749686) both passed **31 automated tests**, Python compilation and JavaScript syntax checks on 3 November 2026. [PR #10](https://github.com/GoreeCloud/location/pull/10) merged into main.
 
 Not an automatic retention schedule, backup removal, offline-device cleanup or certified secure erasure.
+
+## Development cycle 9 — mobile navigation and rendered browser QA
+
+**Implemented in an isolated worktree, awaiting GitHub CI results and screenshot-led design review:**
+
+- Visible mobile Privacy navigation and mobile Sign out control (the previously hidden desktop sidebar contained both).
+- Playwright Chromium browser journey using a throwaway loopback API and synthetic location records.
+- Desktop, tablet and phone screenshot evidence in light/dark modes, with secret tokens masked.
+- Assertions for responsive navigation, sign-out, GPS capture, private network requests, console errors and horizontal document overflow.
+
+Even successful browser CI does not establish completed GC UI visual acceptance, keyboard/screen-reader quality, native mobile clients or production deployment.
