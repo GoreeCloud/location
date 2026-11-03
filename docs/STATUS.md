@@ -80,3 +80,7 @@ Live erasure does not automatically remove separate downloaded exports, backups,
 Verification: [GitHub Actions push run 41605059607](https://github.com/GoreeCloud/location/actions/runs/41605059607) and [PR run 41605081825](https://github.com/GoreeCloud/location/actions/runs/41605081825) passed **16 API tests**, Python compilation, and JavaScript syntax checks on 3 November 2026. [PR #6](https://github.com/GoreeCloud/location/pull/6) merged into main. Browser rendering, real GPS hardware, large-file performance, and production safety remain unverified.
 
 Provider-specific Takeout/GPX/FIT/TCX/GeoJSON imports, large-file progress, resilient concurrency guarantees and import undo remain planned.
+
+## CI supply-chain maintenance
+
+The GitHub Actions workflow now pins `actions/checkout` v5 and `actions/setup-python` v6 to the verified official commit SHAs, both using Node 24, with a 12-minute job timeout. [GitHub Actions run 41605346798](https://github.com/GoreeCloud/location/actions/runs/41605346798) completed successfully on 3 November 2026: **16 API tests passed**, Python compilation and JavaScript syntax checks passed. Seven dependency/test framework deprecation warnings remain; these are not equivalent to a vulnerability audit or production acceptance.
