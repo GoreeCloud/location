@@ -49,7 +49,7 @@ Each location point is checked against the owner's saved circular places using H
 - Background mobile collection and OS-specific power-management behavior.
 - Queue-based notifications with provider success/failure and delivery safeguards.
 - High-volume PostgreSQL/PostGIS or other spatial storage after evidence warrants migration.
-- Automated encrypted backups, full restore drills, retention and schema migrations; consistent online SQLite snapshots are supported via `gclocation backup`.
+- Automated encrypted backups, production restore drills, retention and schema migrations; consistent online snapshots and verified restore-to-new-file are available via the local CLI.
 - Map server deployment, local routing, geocoding, and provider terms.
 - MIPS (Identity, GoreeShield, Wardveil, Mesh) integrations only after verified interfaces and gates.
 
@@ -64,7 +64,7 @@ No database migrations exist beyond initial idempotent schema creation. Treat sc
 - `POST /api/devices/{id}/rotate-token` atomically revokes a prior device-upload token while preserving the device ID, positions, and event history.
 - `GET /api/locations/page` performs keyset ordering on `(recorded_at DESC, id DESC)` with a cursor and per-request owner restrictions.
 - GPX and GeoJSON exports use streaming responses with separate owner-scoped SQLite reads instead of holding unbounded result arrays in RAM.
-- The `gclocation backup --destination NEW_FILE` command uses SQLite's live backup API, exclusive destination creation, and owner-only permissions. No automatic restore or scheduled backup is included.
+- The `gclocation backup --destination NEW_FILE` command uses SQLite's live backup API, exclusive destination creation, and owner-only permissions. `gclocation verify-backup --source SNAPSHOT` validates integrity, foreign keys and expected schema read-only. `gclocation restore --source SNAPSHOT --destination NEW_DB` restores only to a new file and invalidates copied user sessions. No automatic failover, scheduled backup, production restore test or data migration is included.
 
 ## CSV import path
 
