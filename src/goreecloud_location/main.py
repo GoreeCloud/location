@@ -15,6 +15,7 @@ import json
 import math
 import os
 from pathlib import Path
+from typing import Literal
 import secrets
 from xml.etree import ElementTree
 
@@ -62,6 +63,13 @@ class PointIn(StrictModel):
 
 class UserPointIn(PointIn):
     device_id: int = Field(ge=1)
+
+
+class RetentionPurgeIn(StrictModel):
+    older_than_days: int = Field(ge=1, le=36500)
+    expected_points: int = Field(ge=0)
+    expected_events: int = Field(ge=0)
+    confirmation: Literal["DELETE_OLD_HISTORY"]
 
 
 def api_error(status: int, detail: str) -> None:
@@ -254,6 +262,91 @@ def create_app(db_path: Path | None = None) -> FastAPI:
     @app.get("/api/me")
     def me(user=Depends(account)):
         return user
+
+    def retention_cutoff(older_than_days: int) -> str:
+        return (datetime.now(timezone.utc) - timedelta(days=older_than_days)).isoformat(
+            timespec="milliseconds"
+        )
+
+    def retention_counts(db, owner_id: int, cutoff: str) -> tuple[int, int, int]:
+        points = db.execute(
+            """SELECT COUNT(*) FROM points p JOIN devices d ON d.id=p.device_id
+               WHERE d.account_id=? AND p.recorded_at<?""",
+            (owner_id, cutoff),
+        ).fetchone()[0]
+        events = db.execute(
+            """SELECT COUNT(*) FROM events e JOIN devices d ON d.id=e.device_id
+               WHERE d.account_id=? AND e.recorded_at<?""",
+            (owner_id, cutoff),
+        ).fetchone()[0]
+        devices = db.execute(
+            """SELECT COUNT(*) FROM devices d WHERE d.account_id=? AND (
+                    EXISTS (SELECT 1 FROM points p WHERE p.device_id=d.id AND p.recorded_at<?)
+                 OR EXISTS (SELECT 1 FROM events e WHERE e.device_id=d.id AND e.recorded_at<?)
+               )""",
+            (owner_id, cutoff, cutoff),
+        ).fetchone()[0]
+        return int(points), int(events), int(devices)
+
+    @app.get("/api/retention/preview")
+    def retention_preview(older_than_days: int = Query(ge=1, le=36500),
+                          user=Depends(account)):
+        """Only return counts; never mutate stored GPS positions."""
+        cutoff = retention_cutoff(older_than_days)
+        with connect(path) as db:
+            points, events, devices = retention_counts(db, user["id"], cutoff)
+        return {"older_than_days": older_than_days, "cutoff_utc": cutoff,
+                "eligible_points": points, "eligible_events": events,
+                "affected_devices": devices,
+                "warning": "Preview only. Backups and exported copies are not included."}
+
+    @app.post("/api/retention/purge")
+    def retention_purge(body: RetentionPurgeIn, user=Depends(account)):
+        """Manually purge only an owner's old GPS points and associated events.
+
+        The explicit confirmation and a transaction/lock prevent partial writes.
+        Device registrations, newer history and token credentials remain.
+        This is logical live-database deletion, not forensic erasure of backups.
+        """
+        cutoff = retention_cutoff(body.older_than_days)
+        with connect(path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            current_points, current_events, _ = retention_counts(
+                db, user["id"], cutoff
+            )
+            if (current_points != body.expected_points
+                    or current_events != body.expected_events):
+                api_error(409, "Eligible records changed; preview again before deleting")
+            affected = [
+                row[0] for row in db.execute(
+                    """SELECT d.id FROM devices d WHERE d.account_id=? AND (
+                           EXISTS (SELECT 1 FROM points p
+                                   WHERE p.device_id=d.id AND p.recorded_at<?)
+                        OR EXISTS (SELECT 1 FROM events e
+                                   WHERE e.device_id=d.id AND e.recorded_at<?)
+                       )""",
+                    (user["id"], cutoff, cutoff),
+                )
+            ]
+            points = db.execute(
+                """DELETE FROM points WHERE id IN (
+                      SELECT p.id FROM points p JOIN devices d ON d.id=p.device_id
+                      WHERE d.account_id=? AND p.recorded_at<?
+                    )""",
+                (user["id"], cutoff),
+            ).rowcount
+            events = db.execute(
+                """DELETE FROM events WHERE id IN (
+                      SELECT e.id FROM events e JOIN devices d ON d.id=e.device_id
+                      WHERE d.account_id=? AND e.recorded_at<?
+                    )""",
+                (user["id"], cutoff),
+            ).rowcount
+            for device_id in affected:
+                db.execute("DELETE FROM geofence_state WHERE device_id=?", (device_id,))
+        return {"cutoff_utc": cutoff, "deleted_points": points,
+                "deleted_events": events, "reset_devices": len(affected),
+                "warning": "Live records deleted. Backups, exports and offline caches remain."}
 
     @app.get("/api/summary")
     def summary(user=Depends(account)):

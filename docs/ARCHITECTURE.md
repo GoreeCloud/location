@@ -73,3 +73,8 @@ An account owner can submit a raw text/csv body to a registered device. The API 
 ## Login and session resource budgets
 
 The authentication module uses a bounded, process-local sliding-window limiter with separate username, ASGI peer and global budgets. The initial limits are 5/40/300 attempts in five minutes, with an LRU cap on memory buckets. A random in-memory dummy scrypt hash prevents unknown-user requests from skipping the expensive password verifier. Successful login clears a username's attempt bucket, but peer/global throttles continue to apply. Expired sessions are purged on successful login; no more than 20 active sessions per user are retained. This is not a multi-worker or multi-server rate limit, nor a replacement for TLS, trusted proxy configuration, MFA or a security review.
+
+
+## Manual retention workflow
+
+The owner-scoped API offers read-only counts before an explicitly confirmed UTC cutoff deletion. An immediate SQLite write transaction rechecks the counts to reject stale previews. Old GPS positions/events are removed and affected devices' geofence state is reset. The process is not scheduled and does not purge backed-up or exported copies. Fresh location points and device credentials remain.

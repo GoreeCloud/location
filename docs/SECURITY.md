@@ -69,3 +69,8 @@ CSV uploads require the owning user's authenticated session and a device ID that
 Online password checks use a memory-bounded, thread-safe, process-local sliding-window budget reserved **before** the scrypt operation. It has independent per-username (5), per-ASGI-peer (40) and service-wide (300) limits during each five-minute window. Success clears the username-specific bucket but not peer/global counters. The peer identity comes from ASGI, not an arbitrary request header. In deployments using a reverse proxy, verify trusted-proxy configuration and apply additional gateway-side controls: this mechanism alone is not safe against distributed attacks.
 
 Unknown usernames are checked against a random dummy scrypt hash to reduce account-existence timing differences, but network/database effects remain and this is not a guarantee of constant-time operation. Generic authentication errors avoid disclosing which usernames exist. Per-account active sessions are capped at 20, automatically revoking the oldest token after additional sign-ins. MFA, persistent shared limits, recovery workflows and external identity require independent work.
+
+
+## Manual retention cleanup safeguards
+
+An authenticated user can preview deletion counts without changing records. Actual cleanup requires the exact confirmation phrase and matching preview counts inside an immediate SQLite write transaction. The UI requires an additional explicit confirmation. The action is account-scoped and removes old GPS points and events, resets affected geofence state and retains newer history and registered devices. It does not automatically purge backups, downloads, logs or offline caches and does not certify secure physical erasure or regulatory compliance.

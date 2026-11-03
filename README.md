@@ -17,7 +17,7 @@
 - Circular places/geofences with arrival and departure events when reported GPS accuracy is sufficient.
 - Responsive dark/light GoreeCloud UI dashboard with coordinate-map view, route overlays, device cards, timeline, places, and recent events.
 - Explicit browser location capture (requires user permission + HTTPS or localhost).
-- Owner-scoped *streaming, complete* GeoJSON and GPX exports, cursor-paginated history, individual deletion, confirmed per-device history erasure, and device/place deletion.
+- Owner-scoped *streaming, complete* GeoJSON and GPX exports, cursor-paginated history, individual deletion, confirmed per-device erasure, manual preview-first retention cleanup and device/place deletion.
 - Zero-dependency static browser UI and no mandatory external map requests.
 - Bounded process-local account/peer/global login attempt budgets with uniform password hashing for unknown accounts.
 - Optional relative-path tile URL pointing to a **separately hosted** private tile server.
@@ -66,7 +66,7 @@ curl -X POST 'http://127.0.0.1:8123/api/ingest/DEVICE_ID' \
 
 The example coordinates are illustrative, not real user data. An ingestion token can only upload positions for its single associated device; it cannot read private history. Rotate the token using the **Rotate key** action in Devices, or POST `/api/devices/{id}/rotate-token`. Old tokens become invalid immediately and history is preserved; update your tracking client with the new key.
 
-On **Devices**, **Erase history** permanently deletes the selected device's GPS points and geofence events while retaining its registration and ingestion token. The UI requires typing ERASE to confirm. Earlier backups and downloaded exports remain separate copies; handle those under your data-retention policy.
+On **Devices**, **Erase history** permanently deletes a selected device's GPS points and geofence events while retaining registration and ingestion credentials. In **Privacy & settings**, a separate manual retention preview can count location records older than a chosen number of days; deletion requires an exact confirmation phrase and unchanged server-side preview counts. There is no automatic retention schedule. Earlier backups and downloaded exports remain separate copies.
 
 In **History**, select one device, choose a UTF-8 CSV file, and choose **Import CSV**. The CSV must contain latitude, longitude and timezone-aware recorded_at columns; optional columns are accuracy_m, altitude_m, speed_mps, heading_deg and battery_percent. A single import allows at most 5,000 rows and 2 MiB of data. All rows are checked before writing, and duplicate device/timestamp/coordinate points are skipped. Importing does not contact external providers.
 

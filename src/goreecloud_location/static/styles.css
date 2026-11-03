@@ -280,3 +280,10 @@ td strong { color:var(--gc-text); }
 .header-tools input[type="file"] { max-width: 185px; min-width: 145px; min-height: 44px; padding: 10px; font-size: 11px; }
 .header-tools { flex-wrap: wrap; }
 @media (max-width: 680px) { .header-tools input[type="file"] { max-width: 100%; } }
+
+.retention-card input { background: var(--gc-deeper); }
+.retention-card .button { margin-top: 14px; width: 100%; }
+.retention-summary { border: 1px solid var(--gc-outline); border-radius: 12px; padding: 12px; background: var(--gc-surface-tonal); font-size: 12px; }
+.button.danger-button { border-color: #df8a99; color: #ffe4e8; background: #8b3145; }
+.button.danger-button:hover { background: #a33950; }
+html[data-theme="light"] .button.danger-button { color: #fff; }

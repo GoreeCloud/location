@@ -6,6 +6,7 @@ const $ = (id) => document.getElementById(id);
 const state = {
   token: sessionStorage.getItem("gc-location-session") || "",
   user: null, devices: [], points: [], places: [], events: [],
+  retentionPreview: null,
   selectedHistoryDevice: "", zoomAdjust: 0, tileTemplate: ""
 };
 const headings = {
@@ -61,6 +62,9 @@ function signedIn(user) {
 function signOutLocal() {
   state.token = "";
   state.user = null;
+  state.retentionPreview = null;
+  $("retention-confirm").value = "";
+  text("retention-summary", "No preview yet.");
   sessionStorage.removeItem("gc-location-session");
   $("app-shell").hidden = true;
   $("login-screen").hidden = false;
@@ -462,6 +466,55 @@ function setupEvents() {
       } catch (error) { showToast(error.message); }
     }, (error) => showToast("Unable to read your location: " + error.message),
     {enableHighAccuracy:true, timeout:15000, maximumAge:0});
+  });
+  $("retention-days").addEventListener("input", () => {
+    state.retentionPreview = null;
+    text("retention-summary", "Days changed. Preview again before deleting.");
+  });
+  $("retention-preview").addEventListener("click", async () => {
+    const days = Number($("retention-days").value);
+    if (!Number.isInteger(days) || days < 1 || days > 36500) {
+      return showToast("Choose a whole number of days between 1 and 36,500.");
+    }
+    try {
+      const data = await api("/api/retention/preview?older_than_days=" + days);
+      state.retentionPreview = data;
+      text("retention-summary", data.eligible_points + " GPS points and "
+        + data.eligible_events + " geofence events eligible across "
+        + data.affected_devices + " devices.");
+    } catch (error) { showToast(error.message); }
+  });
+  $("retention-purge").addEventListener("click", async () => {
+    const days = Number($("retention-days").value);
+    const preview = state.retentionPreview;
+    if (!preview || preview.older_than_days !== days) {
+      return showToast("Preview this period before attempting deletion.");
+    }
+    if ($("retention-confirm").value !== "DELETE_OLD_HISTORY") {
+      return showToast("Type the exact confirmation phrase before deleting.");
+    }
+    if (!preview.eligible_points && !preview.eligible_events) {
+      return showToast("No old records are eligible for deletion.");
+    }
+    if (!window.confirm("Permanently delete up to " + preview.eligible_points
+      + " location points and " + preview.eligible_events
+      + " geofence events older than " + days + " days? Backups remain untouched.")) return;
+    try {
+      const result = await api("/api/retention/purge", {
+        method: "POST", body: JSON.stringify({
+          older_than_days: days,
+          expected_points: preview.eligible_points,
+          expected_events: preview.eligible_events,
+          confirmation: "DELETE_OLD_HISTORY"
+        })
+      });
+      $("retention-confirm").value = "";
+      state.retentionPreview = null;
+      text("retention-summary", "Deleted " + result.deleted_points + " points and "
+        + result.deleted_events + " events from the live database.");
+      await refresh();
+      showToast("Manual history cleanup finished. Backups and exports were not changed.");
+    } catch (error) { showToast(error.message); }
   });
   $("history-device").addEventListener("change", (event) => {
     state.selectedHistoryDevice = event.target.value; renderHistory();

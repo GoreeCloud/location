@@ -25,6 +25,8 @@ All routes below use JSON unless otherwise noted. There are **no public location
 | POST | `/api/places` | User session | Create circular geofence |
 | DELETE | `/api/places/{id}` | Owner session | Delete geofence and its events |
 | GET | `/api/events?limit=40` | User session | Geofence transition log |
+| GET | `/api/retention/preview?older_than_days=N` | User session | Non-destructive owner-scoped count preview |
+| POST | `/api/retention/purge` | User session | Explicit confirmed, preview-count-matched purge of old account history |
 | GET | `/api/export/geojson?device_id=N` | Owner session | Complete streaming GeoJSON export |
 | GET | `/api/export/gpx?device_id=N` | Owner session | Complete streaming GPX export |
 
@@ -83,3 +85,21 @@ Send raw UTF-8 bytes with Content-Type: text/csv and a valid owner session to PO
 A successful response provides imported, skipped_duplicates and geofence_events counts. The operation first validates the entire file (maximum 2 MiB, 5,000 records) then writes within one transaction; a malformed file does not partially import. Rows are sorted by timestamp before processing. Duplicate device/timestamp/latitude/longitude combinations are skipped as a best-effort deduplication strategy; concurrent ingestion and large migrations require additional controls.
 
 This endpoint is an initial CSV-only utility. Google Takeout, GPX and other provider-specific imports are not implemented.
+
+
+## Manual history retention preview and purge
+
+GET /api/retention/preview?older_than_days=90 returns read-only counts of the current user's positions, place events and affected devices older than the server's UTC cutoff. Days must be a whole number between 1 and 36,500. Preview alone does not delete records.
+
+A subsequent POST /api/retention/purge requires JSON:
+
+```json
+{
+  "older_than_days": 90,
+  "expected_points": 100,
+  "expected_events": 4,
+  "confirmation": "DELETE_OLD_HISTORY"
+}
+```
+
+Counts must match the server's new transactional check; otherwise HTTP 409 is returned without deletion. The API deletes eligible points and events only for the authenticated account, resets affected geofence state and preserves newer history and device registrations. This is manual logical deletion, not an automatic retention schedule or secure wiping of exports, SQLite remnants, logs, offline devices or backups.
