@@ -8,7 +8,7 @@ import stat
 
 from goreecloud_location.store import backup_database, connect, create_account, initialize, utc_now
 
-from test_api import auth, device
+from test_api import auth, client, device
 
 
 def test_device_rotation_revokes_old_token_without_deleting_history(client):
