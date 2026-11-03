@@ -88,11 +88,13 @@ The GitHub Actions workflow now pins `actions/checkout` v5 and `actions/setup-py
 
 ## Development cycle 5 — backup verification and recovery
 
-**Implemented in the development worktree; awaiting remote CI and runtime acceptance:**
+**Implemented in source; passed synthetic-data smoke and GitHub API tests. Production recovery acceptance remains pending:**
 
 - Read-only SQLite snapshot verification: header, full integrity, foreign keys, and required GoreeCloud Location schema.
 - Operator-only restore to a new path; existing files are never overwritten.
 - Restored account sessions are cleared, preventing stale session replay; device ingestion credentials are preserved.
 - Recovery test cases cover history restoration, authentication, corruption, incompatible schemas, permissions, symlinks, and refusal to overwrite.
+
+Verification: [GitHub Actions push run 41606502423](https://github.com/GoreeCloud/location/actions/runs/41606502423) and [pull-request run 41606524731](https://github.com/GoreeCloud/location/actions/runs/41606524731) passed **21 API tests**, Python compilation and JavaScript syntax checks on 3 November 2026. [PR #7](https://github.com/GoreeCloud/location/pull/7) merged into main. A local smoke test also exercised snapshot, integrity verification, restore, stale-session revocation, permissions, and negative source/destination cases.
 
 No server has been redeployed. This is a local administrative recovery tool, not automatic failover or a production disaster-recovery certification.
