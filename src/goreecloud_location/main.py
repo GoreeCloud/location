@@ -14,7 +14,6 @@ from pathlib import Path
 import secrets
 import threading
 import time
-from typing import Annotated
 from xml.etree import ElementTree
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
@@ -104,7 +103,7 @@ def create_app(db_path: Path | None = None) -> FastAPI:
     attempts: dict[str, list[float]] = {}
     attempts_lock = threading.Lock()
 
-    def account(creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]):
+    def account(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
         if not creds or creds.scheme.lower() != "bearer" or len(creds.credentials) > 256:
             api_error(401, "Authentication required")
         with connect(path) as db:
@@ -234,7 +233,7 @@ def create_app(db_path: Path | None = None) -> FastAPI:
                 "user": {"id": record["id"], "username": record["username"], "role": record["role"]}}
 
     @app.post("/api/auth/logout", status_code=204)
-    def logout(creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
+    def logout(creds: HTTPAuthorizationCredentials | None = Depends(bearer),
                user=Depends(account)):
         with connect(path) as db:
             db.execute("DELETE FROM sessions WHERE token_hash=?", (token_digest(creds.credentials),))
@@ -300,7 +299,7 @@ def create_app(db_path: Path | None = None) -> FastAPI:
 
     @app.post("/api/ingest/{device_id}", status_code=201)
     def ingest_device(device_id: int, body: PointIn,
-                      creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]):
+                      creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
         if not creds or creds.scheme.lower() != "bearer" or len(creds.credentials) > 256:
             api_error(401, "Device token required")
         with connect(path) as db:
