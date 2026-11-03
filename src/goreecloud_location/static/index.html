@@ -177,10 +177,10 @@
     </nav>
   </div>
 
-  <dialog id="erase-dialog" class="secret-dialog" aria-labelledby="erase-title">
+  <dialog id="erase-dialog" class="secret-dialog" aria-labelledby="erase-title" aria-describedby="erase-description">
     <form method="dialog">
       <h2 id="erase-title">Erase device history?</h2>
-      <p>This permanently deletes GPS positions and related geofence events for
+      <p id="erase-description">This permanently deletes GPS positions and related geofence events for
         <strong id="erase-device-name"></strong>. The device and its ingestion key stay registered.
         This action cannot be undone.</p>
       <label for="erase-confirm">Type ERASE to confirm</label>
@@ -192,7 +192,7 @@
     </form>
   </dialog>
 
-  <dialog id="secret-dialog" class="secret-dialog">
+  <dialog id="secret-dialog" class="secret-dialog" aria-labelledby="secret-title" aria-describedby="secret-description">
     <h2 id="secret-title">Save your device token</h2><p id="secret-description">Copy this private ingestion token now. It cannot be viewed again after closing this window.</p>
     <div class="secret-box"><code id="device-secret"></code></div>
     <div class="dialog-actions"><button type="button" id="copy-secret" class="button outline">Copy token</button><button type="button" id="close-secret" class="button primary">Done</button></div>

@@ -53,7 +53,8 @@ async function run(){
    await page.waitForFunction(()=>document.querySelector("#metric-points").textContent.trim()!=="—");
    assert.equal(await page.locator("#app-shell").isVisible(),true);
    await page.screenshot({path:path.join(evidence,v.name+"-overview-empty.png"),fullPage:true});
-   await nav("settings").click();
+   await nav("settings").focus();
+   await nav("settings").press("Enter");
    assert.equal(await page.locator("#view-settings").isVisible(),true);
    const cardBoxes=await page.locator("#view-settings .prose-card").evaluateAll(nodes=>
      nodes.map(node=>{const b=node.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width};}));
@@ -75,10 +76,21 @@ async function run(){
    await nav("devices").click();
    await page.locator("#device-name").fill("Synthetic "+v.name+" device");
    await page.locator("#device-form button[type=submit]").click();
-   await page.locator("#secret-dialog").waitFor({state:"visible"});
+   const tokenDialog=page.getByRole("dialog",{name:"Device added successfully"});
+   await tokenDialog.waitFor({state:"visible"});
+   assert.equal(await tokenDialog.getAttribute("aria-describedby"),"secret-description");
    assert.ok((await page.locator("#device-secret").textContent()).length>32);
    await page.screenshot({path:path.join(evidence,v.name+"-device-dialog.png"),fullPage:true,mask:[page.locator("#device-secret")]});
-   await page.locator("#close-secret").click();
+   await page.locator("#close-secret").focus();
+   await page.keyboard.press("Enter");
+   await page.locator("#secret-dialog").waitFor({state:"hidden"});
+   assert.equal(await page.locator("#device-secret").textContent(),"");
+   await page.locator("#devices-list .tiny-action.danger").last().click();
+   const eraseDialog=page.getByRole("dialog",{name:"Erase device history?"});
+   await eraseDialog.waitFor({state:"visible"});
+   assert.equal(await eraseDialog.getAttribute("aria-describedby"),"erase-description");
+   await page.keyboard.press("Escape");
+   await eraseDialog.waitFor({state:"hidden"});
    await nav("overview").click();
    await ctx.grantPermissions(["geolocation"],{origin:url});
    await ctx.setGeolocation({latitude:35.987,longitude:-83.915,accuracy:12});
@@ -94,7 +106,9 @@ async function run(){
    assert.ok(geometry.width<=geometry.viewport+2,"Horizontal overflow "+v.name+" "+JSON.stringify(geometry));
    assert.deepEqual(errors,[],"Browser JS and console errors");
    assert.deepEqual(external,[],"Unexpected third-party HTTP requests");
-   await page.locator(v.width<=680?"#mobile-logout":"#logout").click();
+   const logoutButton=page.locator(v.width<=680?"#mobile-logout":"#logout");
+   await logoutButton.focus();
+   await logoutButton.press("Enter");
    await page.locator("#login-screen").waitFor({state:"visible"});
    assert.equal(await page.locator("#app-shell").isVisible(),false);
    console.log("PASS",v.name,geometry);

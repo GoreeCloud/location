@@ -167,3 +167,12 @@ Even successful browser CI does not establish completed GC UI visual acceptance,
 Verification: [GitHub Actions run 41638709939](https://github.com/GoreeCloud/location/actions/runs/41638709939) passed **31 API tests**, JavaScript syntax and real Chromium browser journeys at desktop/tablet/mobile widths, including CSS geometry assertions. All 18 synthetic screenshots were generated, and corrected desktop/tablet light-settings screenshots were inspected to confirm balanced layout. [PR #12](https://github.com/GoreeCloud/location/pull/12) merged to main. Remaining browser engines, accessibility and native application verification are still open.
 
 No native mobile functionality or production deployment is implied. Full GC UI visual acceptance still requires further verification.
+
+## Development cycle 11 — keyboard and modal accessibility
+
+**Candidate change awaiting GitHub CI:**
+
+- Give the one-time device-token modal and history-erasure dialog explicit accessible names and descriptions.
+- Use real keyboard Enter activation for Settings navigation, dialog Done action and Sign out.
+- Assert Escape safely dismisses the erasure dialog without deleting data, and token text is cleared after closing.
+- Retain explicit limits: this is an automated Chromium keyboard smoke check, not a complete screen-reader or WCAG audit.
