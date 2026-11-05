@@ -457,7 +457,7 @@ def create_app(db_path: Path | None = None) -> FastAPI:
     def devices(user=Depends(account)):
         with connect(path) as db:
             rows = db.execute(
-                """SELECT d.id,d.name,d.kind,d.created_at,
+                """SELECT d.id,d.name,d.kind,d.created_at,d.tracking_paused,d.tracking_resumed_at,
                           p.latitude,p.longitude,p.recorded_at,p.accuracy_m,p.battery_percent
                    FROM devices d LEFT JOIN points p ON p.id = (
                        SELECT id FROM points WHERE device_id=d.id
