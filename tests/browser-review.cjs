@@ -112,7 +112,7 @@ async function run(){
    assert.match(await page.locator("#history-table").innerText(),new RegExp("Synthetic "+v.name+" device"));
    const pointsBeforeImport=Number((await page.locator("#metric-points").textContent()).replaceAll(",",""));
    await page.locator("#history-device").selectOption({index:1});
-   await page.locator("#import-gpx-file").setInputFiles({
+   await page.locator("#history-import-file").setInputFiles({
      name:"synthetic-history.gpx",mimeType:"application/gpx+xml",
      buffer:Buffer.from(
        '<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Browser QA">'
@@ -120,9 +120,22 @@ async function run(){
        +'<time>2026-10-01T11:00:00Z</time></trkpt></trkseg></trk></gpx>'
      )
    });
-   await page.locator("#import-gpx").click();
+   await page.locator("#history-import").click();
    await page.waitForFunction(previous=>
      Number(document.querySelector("#metric-points").textContent.replaceAll(",",""))===previous+1,
+     pointsBeforeImport,{timeout:10000});
+   await page.locator("#history-import-file").setInputFiles({
+     name:"synthetic-history.geojson",mimeType:"application/geo+json",
+     buffer:Buffer.from(JSON.stringify({
+       type:"FeatureCollection",features:[{
+         type:"Feature",geometry:{type:"Point",coordinates:[-83.6,35.6]},
+         properties:{recorded_at:"2026-10-01T11:01:00Z",altitude_m:130}
+       }]
+     }))
+   });
+   await page.locator("#history-import").click();
+   await page.waitForFunction(previous=>
+     Number(document.querySelector("#metric-points").textContent.replaceAll(",",""))===previous+2,
      pointsBeforeImport,{timeout:10000});
    await page.screenshot({path:path.join(evidence,v.name+"-history.png"),fullPage:true});
    const geometry=await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
