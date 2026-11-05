@@ -199,7 +199,7 @@ def create_app(db_path: Path | None = None) -> FastAPI:
         result.headers["Permissions-Policy"] = "geolocation=(self), microphone=(), camera=()"
         result.headers["Content-Security-Policy"] = (
             "default-src 'self'; script-src 'self'; style-src 'self'; "
-            "img-src 'self' data: https:; connect-src 'self'; "
+            "img-src 'self' data:; connect-src 'self'; "
             "base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'"
         )
         if request.url.path.startswith("/api/"):
@@ -213,8 +213,13 @@ def create_app(db_path: Path | None = None) -> FastAPI:
     @app.get("/api/config")
     def public_config():
         tile = os.environ.get("GC_TILE_TEMPLATE", "")
-        if tile and not (tile.startswith("/") and not tile.startswith("//")):
-            tile = ""  # External providers are never enabled implicitly.
+        if tile and (
+            not tile.startswith("/") or tile.startswith("//")
+            or "\\" in tile or any(ord(char) < 32 or ord(char) == 127 for char in tile)
+        ):
+            # A leading / followed by a backslash is normalized by browsers
+            # into //external-host. Reject that and other URL controls.
+            tile = ""
         return {"tile_template": tile, "self_hosted": True}
 
     @app.post("/api/auth/login")
