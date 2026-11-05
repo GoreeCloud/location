@@ -417,6 +417,13 @@ function setupEvents() {
   };
   $("logout").addEventListener("click", logoutAction);
   $("mobile-logout").addEventListener("click", logoutAction);
+  $("logout-all").addEventListener("click", async () => {
+    if (!window.confirm("Revoke all of your signed-in account sessions, including this browser? Separate GPS device upload keys will remain active.")) return;
+    try {
+      await api("/api/auth/logout-all", {method:"POST"});
+      signOutLocal();
+    } catch (error) { showToast(error.message); }
+  });
   $("theme-toggle").addEventListener("click", () => {
     const mode = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = mode;
