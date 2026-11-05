@@ -168,6 +168,8 @@ def create_app(db_path: Path | None = None) -> FastAPI:
         if device["tracking_paused"]:
             api_error(409, "Collection is paused for this device")
         stamp = timestamp_for(point.recorded_at)
+        if device["tracking_resumed_at"] and stamp <= device["tracking_resumed_at"]:
+            api_error(409, "Fix was recorded before this device resumed collection")
         last = db.execute(
             """SELECT recorded_at FROM points WHERE device_id=?
                ORDER BY recorded_at DESC, id DESC LIMIT 1""",
