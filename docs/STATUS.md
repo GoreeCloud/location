@@ -194,10 +194,12 @@ Verification: [PR #15](https://github.com/GoreeCloud/location/pull/15) merged in
 
 ## Development cycle 13 — atomic GPS ingestion
 
-**Candidate fix under CI review (5 November 2026):**
+**Implemented in `main`; GitHub CI passed 5 November 2026:**
 
 - Reserve SQLite's immediate writer lock before latest-location checks during account, device-token and CSV ingestion.
 - Update points, geofence state and related events together in one rollback-capable transaction.
 - Add a concurrent real-API regression test with mixed owner and device-token clients, asserting one arrival and one departure per chronological batch without lock errors.
+
+Verification: [PR #16](https://github.com/GoreeCloud/location/pull/16) merged after [CI run 42103124834](https://github.com/GoreeCloud/location/actions/runs/42103124834) passed **36 automated API tests** (7 dependency/framework warnings), Python compilation, JavaScript syntax and three-viewport Chromium browser journeys. The concurrency test used synthetic credentials and GPS coordinates; no real location data or running service was modified.
 
 **Limits:** single SQLite database only, no distributed queue, load certification or production tracking acceptance. A simultaneous-uploads test is not proof of reliability under all levels of contention.
