@@ -232,7 +232,7 @@ Verification: [PR #18](https://github.com/GoreeCloud/location/pull/18) merged af
 
 ## Development cycle 16 — OwnTracks-compatible HTTP ingestion
 
-**Implemented on a review branch, GitHub CI and real-client acceptance pending (5 November 2026):**
+**Merged in `main`; synthetic GitHub API and Chromium CI passed 5 November 2026; real-client acceptance remains open:**
 
 - Authenticate HTTP Basic clients against each registered device's one-time, write-only ingestion token, with a fixed `owntracks` username.
 - Accept bounded OwnTracks JSON location reports, convert Unix-seconds timestamps and speed units, and use existing per-device SQLite/geofence processing.
@@ -240,4 +240,6 @@ Verification: [PR #18](https://github.com/GoreeCloud/location/pull/18) merged af
 - Add synthetic API regression tests for location telemetry, chronology, owner isolation, Basic/Bearer separation, key rotation and malformed payloads.
 - Document setup, HTTPS requirements, and unsupported MQTT/encryption/native-device acceptance in [OwnTracks HTTP](OWNTRACKS_HTTP.md).
 
-**Remaining gates:** GitHub CI, native OwnTracks Android/iOS validation on authorized devices, reverse-proxy/TLS review and actual recovery testing. This is not proof of background mobile tracking or production readiness.
+Verification: [PR #19](https://github.com/GoreeCloud/location/pull/19) merged after [GitHub CI run 42108927294](https://github.com/GoreeCloud/location/actions/runs/42108927294) passed **65 automated API tests** (7 dependency/framework warnings), Python compilation, JavaScript syntax, and Playwright Chromium desktop/tablet/phone journeys. Tests used synthetic location data and device tokens only.
+
+**Remaining gates:** Native OwnTracks Android/iOS validation on authorized devices, reverse-proxy/TLS review and actual recovery testing. This is not proof of background mobile tracking or production readiness.
