@@ -74,3 +74,9 @@ Unknown usernames are checked against a random dummy scrypt hash to reduce accou
 ## Manual retention cleanup safeguards
 
 An authenticated user can preview deletion counts without changing records. Actual cleanup requires the exact confirmation phrase and matching preview counts inside an immediate SQLite write transaction. The UI requires an additional explicit confirmation. The action is account-scoped and removes old GPS points and events, resets affected geofence state and retains newer history and registered devices. It does not automatically purge backups, downloads, logs or offline caches and does not certify secure physical erasure or regulatory compliance.
+
+## Geofence chronology and false-alert limits
+
+Live geofence state changes only for a device point whose normalized UTC recorded timestamp is strictly greater than that device’s latest stored timestamp. Older and equal-timestamp reports remain in the private history for review/export but cannot generate new arrival/departure events. This prevents a same-instant conflicting or reordered report from inventing a transition. The rule applies to account-authenticated uploads, device ingestion tokens, and bounded CSV imports.
+
+**Limitations:** timestamps are supplied by clients and can be erroneous or malicious. This rule does not prove presence, detect spoofing, remove duplicates, make alerts timely, or solve concurrent multi-writer ordering without a storage-level concurrency design. GoreeCloud Location is not an emergency or safety-critical response service.
