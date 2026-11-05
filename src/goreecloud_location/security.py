@@ -60,12 +60,22 @@ class LoginAttemptLimiter:
                     self._prune(bucket, now)
                     if len(bucket) >= limit:
                         return False
+            # Reclaim only expired entries when capacity is tight. Evicting
+            # live buckets would erase unexpired password-guessing attempts,
+            # allowing a caller to reset an account/peer budget by churning
+            # unrelated names or peers. Refuse the whole reservation instead.
+            missing = sum(key not in self._buckets for key in keys)
+            if len(self._buckets) + missing > self.max_buckets:
+                for key, bucket in list(self._buckets.items()):
+                    self._prune(bucket, now)
+                    if not bucket:
+                        del self._buckets[key]
+                if len(self._buckets) + missing > self.max_buckets:
+                    return False
             self._global.append(now)
             for key in keys:
                 bucket = self._buckets.get(key)
                 if bucket is None:
-                    if len(self._buckets) >= self.max_buckets:
-                        self._buckets.popitem(last=False)
                     bucket = deque()
                     self._buckets[key] = bucket
                 bucket.append(now)
