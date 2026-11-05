@@ -219,11 +219,13 @@ Verification: [PR #17](https://github.com/GoreeCloud/location/pull/17) merged af
 
 ## Development cycle 15 — account-wide session revocation
 
-**Candidate change under CI review (5 November 2026):**
+**Implemented and verified in `main`, 5 November 2026:**
 
 - Provide an authenticated `POST /api/auth/logout-all` endpoint for owner-scoped account session invalidation.
 - Add a confirmed account-wide Sign out action in Privacy & settings while retaining standard single-session logout.
 - Keep other accounts' sessions and independent device ingestion keys intact.
 - Add API tests for account separation, repeated revoked-token rejection, device-token scope and new login, plus a Chromium confirmation journey.
 
-**Limits:** no MFA/OIDC, trusted-device inventory, token replay detection, distributed session policy or account recovery. No real user sessions or production service changed.
+Verification: [PR #18](https://github.com/GoreeCloud/location/pull/18) merged after [CI run 42106102664](https://github.com/GoreeCloud/location/actions/runs/42106102664) passed **48 API tests**, Python compilation, JavaScript syntax and desktop/tablet/phone Chromium browser journeys (including both cancellation and confirmation). No real account sessions or live tracking service were modified.
+
+**Limits:** no MFA/OIDC, trusted-device inventory, token replay detection, distributed session policy or account recovery.
