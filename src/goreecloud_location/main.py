@@ -233,6 +233,8 @@ def create_app(db_path: Path | None = None) -> FastAPI:
         with connect(path) as db:
             db.execute("BEGIN IMMEDIATE")
             device = owned_device(db, owner_id, device_id)
+            if device["tracking_paused"]:
+                api_error(409, "Collection is paused for this device")
             for stamp, point in pending:
                 seen = db.execute(
                     """SELECT 1 FROM points WHERE device_id=? AND recorded_at=?
@@ -242,7 +244,7 @@ def create_app(db_path: Path | None = None) -> FastAPI:
                 if seen:
                     duplicates += 1
                     continue
-                result = ingest(db, device, point)
+                result = ingest(db, device, point, historical_import=True)
                 imported += 1
                 generated_events += len(result["events"])
         return {"device_id": device_id, "imported": imported,
