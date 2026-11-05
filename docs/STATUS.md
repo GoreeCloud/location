@@ -206,11 +206,13 @@ Verification: [PR #16](https://github.com/GoreeCloud/location/pull/16) merged af
 
 ## Development cycle 14 — same-origin map tile privacy
 
-**Candidate patch under GitHub CI review (5 November 2026):**
+**Implemented in `main`; GitHub CI passed 5 November 2026:**
 
 - Reject external host, protocol-relative, slash-backslash and control-character map tile templates in the public configuration endpoint.
 - Verify each resolved browser tile URL is same-origin before creating an image request.
 - Tighten Content Security Policy image origins to self and data only.
 - Include API regressions for safe/unsafe templates and a hostile browser configuration interception with third-party request detection.
+
+Verification: [PR #17](https://github.com/GoreeCloud/location/pull/17) merged after [CI run 42105167224](https://github.com/GoreeCloud/location/actions/runs/42105167224) passed **46 automated API tests**, Python compilation, JavaScript syntax checks and three-viewport Chromium browser journeys, including hostile tile-configuration interception. All tests use synthetic data and a loopback-only server.
 
 **Limitations:** does not include a tile server, redirect-policy audit for a future reverse proxy, native client audit, or a production data privacy certification.
