@@ -304,11 +304,20 @@ function renderTiles(geometry, width, height) {
   for (let y = fromY; y <= toY; y++) {
     for (let x = fromX; x <= toX; x++) {
       const wrappedX = ((x % world) + world) % world;
+      const tilePath = state.tileTemplate.replaceAll("{z}", z)
+        .replaceAll("{x}", wrappedX).replaceAll("{y}", y);
+      // Defense in depth: URL parsers interpret /\\host as //host.
+      // The map renderer must never request an external tile provider.
+      if (!tilePath.startsWith("/") || tilePath.startsWith("//") ||
+          tilePath.includes("\\")) continue;
+      let tileUrl;
+      try { tileUrl = new URL(tilePath, window.location.origin); }
+      catch (_error) { continue; }
+      if (tileUrl.origin !== window.location.origin) continue;
       const image = document.createElement("img");
       image.alt = "";
       image.loading = "lazy";
-      image.src = state.tileTemplate.replaceAll("{z}", z)
-        .replaceAll("{x}", wrappedX).replaceAll("{y}", y);
+      image.src = tileUrl.href;
       image.style.left = (width / 2 + (x - cx) * 256) + "px";
       image.style.top = (height / 2 + (y - cy) * 256) + "px";
       node.append(image);
