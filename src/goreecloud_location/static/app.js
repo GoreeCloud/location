@@ -35,13 +35,16 @@ function showToast(message) {
   showToast.timer = setTimeout(() => { node.hidden = true; }, 4200);
 }
 async function api(path, options = {}) {
+  const requestToken = state.token;
   const headers = new Headers(options.headers || {});
   headers.set("Accept", "application/json");
   if (state.token) headers.set("Authorization", "Bearer " + state.token);
   if (options.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   const response = await fetch(path, { ...options, headers, cache: "no-store" });
   if (!response.ok) {
-    if (response.status === 401 && !path.startsWith("/api/auth/login")) signOutLocal();
+    // A delayed 401 for a previous session must not sign out a new user.
+    if (response.status === 401 && !path.startsWith("/api/auth/login")
+        && state.token === requestToken) signOutLocal();
     let message = "Request failed (" + response.status + ").";
     try {
       const data = await response.json();
@@ -62,13 +65,49 @@ function signedIn(user) {
 function signOutLocal() {
   state.token = "";
   state.user = null;
+  state.devices = [];
+  state.points = [];
+  state.places = [];
+  state.events = [];
+  state.selectedHistoryDevice = "";
+  state.zoomAdjust = 0;
   state.retentionPreview = null;
-  $("retention-confirm").value = "";
-  text("retention-summary", "No preview yet.");
   sessionStorage.removeItem("gc-location-session");
   $("app-shell").hidden = true;
   $("login-screen").hidden = false;
+  $("username").value = "";
   $("password").value = "";
+  $("login-feedback").hidden = true;
+  $("retention-confirm").value = "";
+  text("retention-summary", "No preview yet.");
+  $("device-form").reset();
+  $("place-form").reset();
+  $("history-import-file").value = "";
+  if ($("secret-dialog").open) $("secret-dialog").close();
+  if ($("erase-dialog").open) $("erase-dialog").close();
+  text("device-secret", "");
+  text("user-label", "");
+  text("user-avatar", "");
+  clearTimeout(showToast.timer);
+  $("toast").textContent = "";
+  $("toast").hidden = true;
+  // Clear location coordinates, map pins and lists from the DOM as well as
+  // application state, including when another account signs into this tab.
+  renderRecent();
+  renderDevices();
+  renderPlaces();
+  renderHistory();
+  renderEvents();
+  renderCaptureSelect();
+  // Hidden maps cannot be rerendered (zero dimensions); explicitly scrub
+  // coordinates, SVG paths/pins, tile images and last-user metric values.
+  $("map-paths").replaceChildren();
+  $("map-markers").replaceChildren();
+  $("tile-layer").replaceChildren();
+  $("map-empty").hidden = false;
+  text("map-count", "No positions yet");
+  text("map-coordinates", "Waiting for location");
+  for (const name of ["points","devices","places","events"]) text("metric-" + name, "0");
 }
 function selectView(view) {
   if (!headings[view]) return;
@@ -103,10 +142,13 @@ function makeRow(title, subtitle, when, icon = "◎") {
 }
 
 async function refresh() {
+  const requestToken = state.token;
   const [summary, devices, points, places, events] = await Promise.all([
     api("/api/summary"), api("/api/devices"), api("/api/locations?limit=1000"),
     api("/api/places"), api("/api/events?limit=50")
   ]);
+  // Ignore any response started before sign-out or an account switch.
+  if (!state.user || !requestToken || state.token !== requestToken) return;
   state.devices = devices;
   state.points = points;
   state.places = places;

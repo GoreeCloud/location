@@ -29,6 +29,10 @@ The browser acceptance runner checks that Settings navigation can be activated w
 
 The unified History file chooser is exercised with **synthetic CSV, GPX and GeoJSON** uploads at desktop (1440×900), tablet (820×1180) and phone (390×844). Each successful import must increase that account’s point count by exactly one; selecting an unsupported `.txt` extension must display an error and result in **zero** HTTP import calls. This is a browser/UI regression gate, not a proof of real-world archive compatibility, production accessibility, or import throughput.
 
+## Cross-account browser privacy regression
+
+The Chromium suite now signs each synthetic account out after creating track histories, verifies that private in-memory arrays, map coordinates, rendered device/history lists, selected device and transient text are cleared, and then signs a different account into the **same tab**. Its empty devices, points, history and map state must remain distinct. The test runs at 1440×900, 820×1180 and 390×844 and checks no script errors or outside network requests during the switch. It does not establish forensic memory erasure or test all asynchronous request races.
+
 ## Per-device collection privacy journeys
 
 The browser regression exercises each device's **Pause collection** and **Resume collection** controls at desktop, tablet and phone widths with synthetic accounts. It confirms that pausing disables the browser GPS capture action, that a valid write-only device-token upload receives a server-side HTTP 409 while paused, and that the owner can explicitly resume. This is not end-to-end physical GPS client or consent verification.

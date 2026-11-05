@@ -285,6 +285,19 @@ Verification: [PR #22](https://github.com/GoreeCloud/location/pull/22) merged af
 
 This is not full external-file interoperability, screen-reader acceptance, physical-device testing or production deployment.
 
+## Development cycle 20 — browser session privacy isolation
+
+Verification: https://github.com/GoreeCloud/location/actions/runs/42119520716
+
+**Merged through PR #23, verified by passing 77 API tests and Chromium desktop/tablet/phone journeys on 5 November 2026:**
+
+- Clear in-tab GPS history, device/places/event arrays, selected device, map markers, coordinate labels, transient messages and private forms on sign-out.
+- Prevent a slow refresh or late 401 from an old session from overwriting or signing out a different account.
+- Add desktop/tablet/phone Chromium regression journeys that switch between two synthetic accounts in one tab and verify no previous user's location remains in DOM or application state.
+- No API, SQLite schema or real user location data is modified.
+
+**Limits:** Browser memory garbage collection, downloaded/exported files, screenshots, offline caches, server sessions and TLS acceptance require separate controls and review.
+
 ## Development cycle 21 — owner-controlled device collection pause
 
 **Candidate under GitHub CI review (5 November 2026):**
