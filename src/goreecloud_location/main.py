@@ -165,6 +165,8 @@ def create_app(db_path: Path | None = None) -> FastAPI:
         return row
 
     def ingest(db, device, point: PointIn):
+        if device["tracking_paused"]:
+            api_error(409, "Collection is paused for this device")
         stamp = timestamp_for(point.recorded_at)
         last = db.execute(
             """SELECT recorded_at FROM points WHERE device_id=?
