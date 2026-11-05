@@ -110,6 +110,20 @@ async function run(){
    await page.screenshot({path:path.join(evidence,v.name+"-overview-tracked.png"),fullPage:true});
    await nav("history").click();
    assert.match(await page.locator("#history-table").innerText(),new RegExp("Synthetic "+v.name+" device"));
+   const pointsBeforeImport=Number((await page.locator("#metric-points").textContent()).replaceAll(",",""));
+   await page.locator("#history-device").selectOption({index:1});
+   await page.locator("#import-gpx-file").setInputFiles({
+     name:"synthetic-history.gpx",mimeType:"application/gpx+xml",
+     buffer:Buffer.from(
+       '<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Browser QA">'
+       +'<trk><trkseg><trkpt lat="35.5" lon="-83.5">'
+       +'<time>2026-10-01T11:00:00Z</time></trkpt></trkseg></trk></gpx>'
+     )
+   });
+   await page.locator("#import-gpx").click();
+   await page.waitForFunction(previous=>
+     Number(document.querySelector("#metric-points").textContent.replaceAll(",",""))===previous+1,
+     pointsBeforeImport,{timeout:10000});
    await page.screenshot({path:path.join(evidence,v.name+"-history.png"),fullPage:true});
    const geometry=await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
    assert.ok(geometry.width<=geometry.viewport+2,"Horizontal overflow "+v.name+" "+JSON.stringify(geometry));

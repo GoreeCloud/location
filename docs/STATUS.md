@@ -243,3 +243,15 @@ Verification: [PR #18](https://github.com/GoreeCloud/location/pull/18) merged af
 Verification: [PR #19](https://github.com/GoreeCloud/location/pull/19) merged after [GitHub CI run 42108927294](https://github.com/GoreeCloud/location/actions/runs/42108927294) passed **65 automated API tests** (7 dependency/framework warnings), Python compilation, JavaScript syntax, and Playwright Chromium desktop/tablet/phone journeys. Tests used synthetic location data and device tokens only.
 
 **Remaining gates:** Native OwnTracks Android/iOS validation on authorized devices, reverse-proxy/TLS review and actual recovery testing. This is not proof of background mobile tracking or production readiness.
+
+## Development cycle 17 — privacy-first GPX history import
+
+**Implemented in a review branch, GitHub CI and production acceptance pending (5 November 2026):**
+
+- Import owner-selected GPX 1.0 and 1.1 track point history with strict timestamp validation, optional elevation and chronological ordering.
+- Use `defusedxml` to block DTD, entities and external references; limit requests to 2 MiB and 5,000 points; reject malformed files before writing.
+- Reuse the CSV importer's owner-scoped SQLite write transaction and duplicate handling; preserve existing private GPS and geofence semantics.
+- Add browser History GPX file input and desktop/tablet/phone synthetic interaction testing, plus API regressions for round-trip compatibility, isolation, limits, unsafe XML and atomicity.
+- Document supported GPX scope and operator precautions in [GPX import](GPX_IMPORT.md).
+
+**Remaining gates:** GitHub Actions, independent hostile XML and large-file tests, real-world archive compatibility, production TLS and external security review. This is not a general-purpose import service.

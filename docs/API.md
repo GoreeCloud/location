@@ -20,6 +20,7 @@ All routes below use JSON unless otherwise noted. There are **no public location
 | GET | `/api/locations/page?device_id=N&limit=100&cursor=...` | User session | Keyset history page with `items`, `has_more`, and `next_cursor` |
 | POST | `/api/locations` | User session | Record point for owner device |
 | POST | `/api/devices/{id}/import/csv` | Owner session | Raw UTF-8 CSV import, max 2 MiB / 5,000 data rows, atomic validation |
+| POST | `/api/devices/{id}/import/gpx` | Owner session | Defused GPX 1.0/1.1 timestamped track import, max 2 MiB / 5,000 points |
 | DELETE | `/api/locations/{id}` | Owner session | Delete point and matching timestamp events; reset fence state |
 | POST | `/api/ingest/{device_id}` | Device token | Upload point only, never read |
 | POST | `/api/ingest/owntracks/{device_id}` | HTTP Basic device key | OwnTracks JSON location ingestion; always returns `[]` on 200; never reads history |
@@ -90,7 +91,7 @@ Send raw UTF-8 bytes with Content-Type: text/csv and a valid owner session to PO
 
 A successful response provides imported, skipped_duplicates and geofence_events counts. The operation first validates the entire file (maximum 2 MiB, 5,000 records) then writes within one transaction; a malformed file does not partially import. Rows are sorted by timestamp before processing. Duplicate device/timestamp/latitude/longitude combinations are skipped as a best-effort deduplication strategy; concurrent ingestion and large migrations require additional controls.
 
-This endpoint is an initial CSV-only utility. Google Takeout, GPX and other provider-specific imports are not implemented.
+CSV and GPX imports are both available as bounded, account-scoped development utilities. Google Takeout, FIT/TCX/KML, other provider-specific archives, and large resumable imports are not implemented. See [GPX import](GPX_IMPORT.md).
 
 
 ## Manual history retention preview and purge
@@ -113,3 +114,7 @@ Counts must match the server's new transactional check; otherwise HTTP 409 is re
 ## Account-wide session revocation
 
 Send an authenticated POST to `/api/auth/logout-all` to revoke all currently existing login sessions for the signed-in account, including the token making the request. The response is HTTP 204. Other accounts remain signed in. Registered GPS device ingestion keys use a separate credential scope and are **not** rotated or revoked by this action; rotate device keys separately when compromised. The Settings interface requires an explicit confirmation before calling this endpoint. New sign-ins after revocation are permitted and create fresh sessions. This is not multi-factor authentication or a distributed identity provider integration.
+
+## GPX track import
+
+POST `/api/devices/{id}/import/gpx` with an account bearer token and raw GPX XML (`Content-Type: application/gpx+xml`), not a multipart file. The importer accepts GPX 1.0/1.1 track points with explicit timezone-aware timestamps and optional elevation, rejects unsafe XML through `defusedxml`, bounds body size to 2 MiB and track count to 5,000, validates all points before writing, and shares the CSV import's duplicate/transaction logic. Returns 201 plus `imported`, `skipped_duplicates`, and `geofence_events`. Waypoints, routes, extensions, contacts and user-defined geofence events are never imported. [Setup and boundaries](GPX_IMPORT.md).

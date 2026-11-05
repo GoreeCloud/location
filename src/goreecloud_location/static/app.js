@@ -553,6 +553,22 @@ function setupEvents() {
         + response.skipped_duplicates + " duplicates.");
     } catch (error) { showToast(error.message); }
   });
+  $("import-gpx").addEventListener("click", async () => {
+    const selected = state.selectedHistoryDevice;
+    const file = $("import-gpx-file").files[0];
+    if (!selected) return showToast("Choose one device in the timeline filter before importing.");
+    if (!file) return showToast("Select a GPX track file first.");
+    if (file.size > 2097152) return showToast("GPX import must be at most 2 MiB.");
+    try {
+      const response = await api("/api/devices/" + encodeURIComponent(selected) + "/import/gpx", {
+        method: "POST", headers: {"Content-Type": "application/gpx+xml"}, body: file
+      });
+      $("import-gpx-file").value = "";
+      await refresh();
+      showToast("Imported " + response.imported + " GPX points; skipped "
+        + response.skipped_duplicates + " duplicates.");
+    } catch (error) { showToast(error.message); }
+  });
   $("export-geojson").addEventListener("click", () => exportData("geojson"));
   $("export-gpx").addEventListener("click", () => exportData("gpx"));
   $("zoom-in").addEventListener("click", () => { state.zoomAdjust++; renderMap(); });

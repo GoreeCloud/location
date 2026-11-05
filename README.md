@@ -12,7 +12,7 @@
 - User-owned devices (people, vehicles, pets, items, assets) with one-time, owner-rotatable ingestion tokens.
 - Authenticated HTTP location ingestion from browsers or compatible senders.
 - OwnTracks-compatible HTTP JSON location ingestion using per-device Basic authentication, limited to location uploads and synthetic API testing; native app compatibility remains unverified.
-- Account-scoped, bounded raw CSV imports with all-row validation, duplicate skipping and browser file selection.
+- Account-scoped, bounded CSV and GPX track imports with all-row validation, duplicate skipping, and browser file selection.
 - Validated GPS latitude/longitude, accuracy, altitude, speed, heading, battery, timestamp.
 - Timestamp-ordered location history and last-known positions.
 - Circular places/geofences with arrival and departure events when reported GPS accuracy is sufficient.
@@ -25,7 +25,7 @@
 - Docker/Compose deployment example bound to 127.0.0.1; automated API regressions, a synthetic-data loopback HTTP startup smoke test, and CI configuration.
 - Playwright Chromium browser regression suite for phone, tablet and desktop, with synthetic screenshot evidence and mobile Privacy/Sign out access.
 
-**Not implemented:** Native Android/iOS/Linux clients; always-on mobile background GPS collection; family circles and location sharing; advanced geofences; telemetry/fleet protocol adapters; driving risk analysis; offline mobile capture; pet/item integrations; email/push/SMS alerts; crash/SOS response; professional emergency dispatch; local map tile server; additional import formats and full migration utilities beyond the initial CSV endpoint; identity/financial assistance. See [features and milestones](docs/PRODUCT_SPEC.md) and [status](docs/STATUS.md).
+**Not implemented:** Native Android/iOS/Linux clients; always-on mobile background GPS collection; family circles and location sharing; advanced geofences; telemetry/fleet protocol adapters; driving risk analysis; offline mobile capture; pet/item integrations; email/push/SMS alerts; crash/SOS response; professional emergency dispatch; local map tile server; provider-specific imports and full migration utilities beyond initial CSV/GPX track files; identity/financial assistance. See [features and milestones](docs/PRODUCT_SPEC.md) and [status](docs/STATUS.md).
 
 ## Quick start (Python 3.11+)
 
@@ -100,3 +100,5 @@ gclocation backup --destination ~/private-location-2026-11-03.sqlite
 ```
 
 The destination directory must already exist and the backup file must be new; existing files are never overwritten. The output uses owner-only file permissions. Encrypt and safeguard backups separately. An owner-controlled recovery command restores to a NEW path and never overwrites the current database. See [recovery runbook](docs/RECOVERY.md) for verification, restore, and session handling; production recovery drills remain unverified.
+
+Historical GPX tracks can also be imported into an owner-selected device from **History**. The importer accepts only timestamped track points, limits files to 2 MiB / 5,000 points, and rejects unsafe XML. See [GPX import instructions](docs/GPX_IMPORT.md).
