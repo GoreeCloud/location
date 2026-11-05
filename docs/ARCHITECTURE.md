@@ -36,7 +36,7 @@ History API --> authenticated web dashboard / exports
 
 ## Geofence semantics
 
-Each location point is checked against the owner's saved circular places using Haversine distance. A state is initialized without an arrival event (avoids an invented transition); later inside/outside transitions generate events. Points with missing or insufficient accuracy do not trigger transitions. Older out-of-order uploads are recorded but do not mutate current geofence state. This is an initial algorithm, not a guaranteed safety notification system.
+Each location point is checked against the owner's saved circular places using Haversine distance. A state is initialized without an arrival event (avoids an invented transition); later inside/outside transitions generate events. Points with missing or insufficient accuracy do not trigger transitions. Older out-of-order uploads **and conflicting points with an equal recorded timestamp** remain in history but do not mutate current geofence state or generate transitions. Only observations whose recorded timestamp is strictly newer than the device's latest stored point can update live fence state. This is a timestamp-order guard, not a guarantee that GPS readings are genuine, correctly ordered, or safe for emergency decisions. This is an initial algorithm, not a guaranteed safety notification system.
 
 ## Limitations requiring engineering work
 
