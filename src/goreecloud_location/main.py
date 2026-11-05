@@ -164,11 +164,12 @@ def create_app(db_path: Path | None = None) -> FastAPI:
             api_error(404, "Device not found")
         return row
 
-    def ingest(db, device, point: PointIn):
+    def ingest(db, device, point: PointIn, *, historical_import: bool = False):
         if device["tracking_paused"]:
             api_error(409, "Collection is paused for this device")
         stamp = timestamp_for(point.recorded_at)
-        if device["tracking_resumed_at"] and stamp <= device["tracking_resumed_at"]:
+        if (not historical_import and device["tracking_resumed_at"]
+                and stamp <= device["tracking_resumed_at"]):
             api_error(409, "Fix was recorded before this device resumed collection")
         last = db.execute(
             """SELECT recorded_at FROM points WHERE device_id=?
