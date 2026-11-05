@@ -181,11 +181,13 @@ Retain explicit limits: this is an automated Chromium keyboard smoke check, not 
 
 ## Development cycle 12 — geofence chronology correctness
 
-**Candidate fix under CI review (5 November 2026):**
+**Implemented in `main`, verified by automated tests on 5 November 2026; production acceptance remains open:**
 
 - Only strictly newer recorded GPS timestamps can update a device's current geofence state.
 - Preserve equal-timestamp/conflicting positions and older backfill as account-private history without generating contradictory arrival/departure events.
 - Apply the same safeguard to account-authenticated uploads, GPS hardware-token uploads and chronological CSV imports.
 - Regression tests exercise equal-time conflicts, historical backfill, authentic later transitions, account separation and upload-channel consistency.
 
-**Not yet verified:** CI results for this branch, concurrent-writer ordering, clock spoofing, native tracking hardware, and emergency-response reliability. No production GPS history or live services are changed.
+Verification: [PR #15](https://github.com/GoreeCloud/location/pull/15) merged into `main` after [CI run 42102244038](https://github.com/GoreeCloud/location/actions/runs/42102244038) passed **35 API tests** (7 dependency/framework warnings), Python compilation and JavaScript syntax checks, and Playwright Chromium desktop/tablet/phone journeys. No real location data was changed.
+
+**Not verified:** concurrent-writer ordering, clock spoofing, native tracking hardware, emergency-response reliability, and any production deployment or acceptance.
