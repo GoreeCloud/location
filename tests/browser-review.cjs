@@ -117,6 +117,10 @@ async function run(){
    assert.deepEqual(external,[],"Unexpected third-party HTTP requests");
    if(v.name==="desktop") {
      await nav("settings").click();
+     page.once("dialog",dialog=>dialog.dismiss());
+     await page.locator("#logout-all").click();
+     assert.equal(await page.locator("#view-settings").isVisible(),true);
+     assert.equal(await page.locator("#app-shell").isVisible(),true);
      page.once("dialog",dialog=>dialog.accept());
      await page.locator("#logout-all").click();
    } else {
