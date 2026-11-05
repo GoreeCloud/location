@@ -7,7 +7,9 @@ const state = {
   token: sessionStorage.getItem("gc-location-session") || "",
   user: null, devices: [], points: [], places: [], events: [],
   retentionPreview: null,
-  selectedHistoryDevice: "", zoomAdjust: 0, tileTemplate: ""
+  selectedHistoryDevice: "", zoomAdjust: 0, tileTemplate: "",
+  historyItems: [], historyCursor: null, historyHasMore: false,
+  historyLoading: false, historySequence: 0
 };
 const headings = {
   overview: ["Good to see you.", "OVERVIEW"],
