@@ -115,9 +115,19 @@ async function run(){
    assert.ok(geometry.width<=geometry.viewport+2,"Horizontal overflow "+v.name+" "+JSON.stringify(geometry));
    assert.deepEqual(errors,[],"Browser JS and console errors");
    assert.deepEqual(external,[],"Unexpected third-party HTTP requests");
-   const logoutButton=page.locator(v.width<=680?"#mobile-logout":"#logout");
-   await logoutButton.focus();
-   await logoutButton.press("Enter");
+   if(v.name==="desktop") {
+     await nav("settings").click();
+     page.once("dialog",dialog=>dialog.dismiss());
+     await page.locator("#logout-all").click();
+     assert.equal(await page.locator("#view-settings").isVisible(),true);
+     assert.equal(await page.locator("#app-shell").isVisible(),true);
+     page.once("dialog",dialog=>dialog.accept());
+     await page.locator("#logout-all").click();
+   } else {
+     const logoutButton=page.locator(v.width<=680?"#mobile-logout":"#logout");
+     await logoutButton.focus();
+     await logoutButton.press("Enter");
+   }
    await page.locator("#login-screen").waitFor({state:"visible"});
    assert.equal(await page.locator("#app-shell").isVisible(),false);
    console.log("PASS",v.name,geometry);

@@ -7,7 +7,8 @@ All routes below use JSON unless otherwise noted. There are **no public location
 | GET | `/api/health` | Public | Non-sensitive service status |
 | GET | `/api/config` | Public | Local map tile configuration only |
 | POST | `/api/auth/login` | Username/password | Create 8-hour user session |
-| POST | `/api/auth/logout` | User session | Revoke session |
+| POST | `/api/auth/logout` | User session | Revoke one session |
+| POST | `/api/auth/logout-all` | User session | Revoke every existing login session owned by this account; device keys unaffected |
 | GET | `/api/me` | User session | Current user |
 | GET | `/api/summary` | User session | Counts of devices, points, places, events |
 | GET | `/api/devices` | User session | Owner devices with last positions |
@@ -103,3 +104,7 @@ A subsequent POST /api/retention/purge requires JSON:
 ```
 
 Counts must match the server's new transactional check; otherwise HTTP 409 is returned without deletion. The API deletes eligible points and events only for the authenticated account, resets affected geofence state and preserves newer history and device registrations. This is manual logical deletion, not an automatic retention schedule or secure wiping of exports, SQLite remnants, logs, offline devices or backups.
+
+## Account-wide session revocation
+
+Send an authenticated POST to `/api/auth/logout-all` to revoke all currently existing login sessions for the signed-in account, including the token making the request. The response is HTTP 204. Other accounts remain signed in. Registered GPS device ingestion keys use a separate credential scope and are **not** rotated or revoked by this action; rotate device keys separately when compromised. The Settings interface requires an explicit confirmation before calling this endpoint. New sign-ins after revocation are permitted and create fresh sessions. This is not multi-factor authentication or a distributed identity provider integration.
