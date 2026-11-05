@@ -21,7 +21,7 @@ from xml.etree import ElementTree
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -63,6 +63,25 @@ class PointIn(StrictModel):
 
 class UserPointIn(PointIn):
     device_id: int = Field(ge=1)
+
+
+class OwnTracksLocation(BaseModel):
+    """Subset of OwnTracks' native HTTP JSON used for position ingestion.
+
+    Ignore non-position metadata (Wi-Fi identifiers, contacts, etc.) rather
+    than storing sensitive fields that GoreeCloud Location does not need.
+    """
+    model_config = ConfigDict(extra="ignore", allow_inf_nan=False)
+
+    kind: Literal["location"] = Field(alias="_type")
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    tst: int = Field(ge=0, le=253402300799, strict=True)
+    acc: float | None = Field(default=None, ge=0, le=10000)
+    alt: float | None = Field(default=None, ge=-11000, le=100000)
+    vel: float | None = Field(default=None, ge=0, le=1080)  # km/h
+    cog: float | None = Field(default=None, ge=0, le=360)
+    batt: int | None = Field(default=None, ge=0, le=100, strict=True)
 
 
 class RetentionPurgeIn(StrictModel):
@@ -111,6 +130,7 @@ def create_app(db_path: Path | None = None) -> FastAPI:
     app = FastAPI(title="GoreeCloud Location", version="0.1.0",
                   docs_url=None, redoc_url=None, openapi_url=None)
     bearer = HTTPBearer(auto_error=False)
+    basic = HTTPBasic(auto_error=False)
     login_limiter = LoginAttemptLimiter()
     # Always run scrypt for an unknown username to reduce account enumeration
     # via response timing. No account uses this random dummy password hash.
@@ -539,6 +559,90 @@ def create_app(db_path: Path | None = None) -> FastAPI:
             if not device:
                 api_error(401, "Invalid device token")
             return ingest(db, device, body)
+
+    @app.post("/api/ingest/owntracks/{device_id}")
+    async def ingest_owntracks(device_id: int, request: Request,
+                               creds: HTTPBasicCredentials | None = Depends(basic)):
+        """Accept the OwnTracks HTTP location subset via write-only device key.
+
+        Basic username is 'owntracks', Basic password is the existing one-time
+        device ingestion token. Never use account login passwords for tracking.
+        A valid empty or recognized non-location message is acknowledged
+        without modifying positions, places or geofence state.
+        """
+        if (creds is None or creds.username != "owntracks"
+                or not creds.password or len(creds.password) > 256):
+            raise HTTPException(401, "Device token required",
+                                headers={"WWW-Authenticate": "Basic"})
+        digest = token_digest(creds.password)
+        with connect(path) as db:
+            registered = db.execute(
+                "SELECT id FROM devices WHERE id=? AND ingest_token_hash=?",
+                (device_id, digest),
+            ).fetchone()
+        if registered is None:
+            raise HTTPException(401, "Invalid device token",
+                                headers={"WWW-Authenticate": "Basic"})
+
+        # Bound request size regardless of HTTP content length or streaming
+        # transfer encoding; do not log the incoming private GPS payload.
+        payload = bytearray()
+        async for chunk in request.stream():
+            if len(payload) + len(chunk) > 16384:
+                api_error(413, "OwnTracks payload exceeds 16 KiB")
+            payload.extend(chunk)
+        if not payload:
+            return []  # OwnTracks sends empty messages for some housekeeping.
+        content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+        if content_type != "application/json":
+            api_error(415, "OwnTracks requires application/json")
+        try:
+            data = json.loads(
+                bytes(payload).decode("utf-8"),
+                parse_constant=lambda _: (_ for _ in ()).throw(ValueError("Non-finite JSON")),
+            )
+        except (UnicodeDecodeError, ValueError, RecursionError):
+            api_error(422, "Invalid OwnTracks JSON")
+        if not isinstance(data, dict):
+            api_error(422, "OwnTracks JSON must be an object")
+
+        kind = data.get("_type")
+        if not isinstance(kind, str):
+            api_error(422, "Unsupported OwnTracks message type")
+        # OwnTracks sends transition, waypoint and status messages as well.
+        # Device-reported transitions are not trusted as server geofences.
+        if kind in {"lwt", "status", "transition", "waypoint", "beacon",
+                    "steps", "card", "cmd", "configuration", "request"}:
+            return []
+        if kind != "location":
+            api_error(422, "Unsupported OwnTracks message type")
+
+        try:
+            location = OwnTracksLocation.model_validate(data)
+            recorded_at = datetime.fromtimestamp(location.tst, tz=timezone.utc)
+            point = PointIn(
+                latitude=location.lat, longitude=location.lon,
+                recorded_at=recorded_at, accuracy_m=location.acc,
+                altitude_m=location.alt,
+                speed_mps=(location.vel / 3.6 if location.vel is not None else None),
+                heading_deg=location.cog, battery_percent=location.batt,
+            )
+        except (ValidationError, ValueError, OSError, OverflowError):
+            api_error(422, "Invalid OwnTracks location fields")
+
+        with connect(path) as db:
+            # Serialize with all other GPS ingestion and re-check token after
+            # acquiring the writer lock, so key rotation cannot race the write.
+            db.execute("BEGIN IMMEDIATE")
+            registered = db.execute(
+                "SELECT * FROM devices WHERE id=? AND ingest_token_hash=?",
+                (device_id, digest),
+            ).fetchone()
+            if registered is None:
+                raise HTTPException(401, "Invalid device token",
+                                    headers={"WWW-Authenticate": "Basic"})
+            ingest(db, registered, point)
+        return []  # Native OwnTracks HTTP response format.
 
     @app.get("/api/locations")
     def locations(device_id: int | None = None,

@@ -11,6 +11,7 @@
 - Login with short-lived, hashed-at-rest bearer sessions; logout revokes sessions. At most 20 live sessions per account; older tokens are revoked automatically.
 - User-owned devices (people, vehicles, pets, items, assets) with one-time, owner-rotatable ingestion tokens.
 - Authenticated HTTP location ingestion from browsers or compatible senders.
+- OwnTracks-compatible HTTP JSON location ingestion using per-device Basic authentication, limited to location uploads and synthetic API testing; native app compatibility remains unverified.
 - Account-scoped, bounded raw CSV imports with all-row validation, duplicate skipping and browser file selection.
 - Validated GPS latitude/longitude, accuracy, altitude, speed, heading, battery, timestamp.
 - Timestamp-ordered location history and last-known positions.
@@ -21,7 +22,8 @@
 - Zero-dependency static browser UI and no mandatory external map requests.
 - Bounded process-local account/peer/global login attempt budgets with uniform password hashing for unknown accounts.
 - Optional relative-path tile URL pointing to a **separately hosted** private tile server.
-- Docker/Compose deployment example bound to 127.0.0.1; automated API regressions, a synthetic-data loopback HTTP startup smoke test, and CI configuration.\n- Playwright Chromium browser regression suite for phone, tablet and desktop, with synthetic screenshot evidence and mobile Privacy/Sign out access.
+- Docker/Compose deployment example bound to 127.0.0.1; automated API regressions, a synthetic-data loopback HTTP startup smoke test, and CI configuration.
+- Playwright Chromium browser regression suite for phone, tablet and desktop, with synthetic screenshot evidence and mobile Privacy/Sign out access.
 
 **Not implemented:** Native Android/iOS/Linux clients; always-on mobile background GPS collection; family circles and location sharing; advanced geofences; telemetry/fleet protocol adapters; driving risk analysis; offline mobile capture; pet/item integrations; email/push/SMS alerts; crash/SOS response; professional emergency dispatch; local map tile server; additional import formats and full migration utilities beyond the initial CSV endpoint; identity/financial assistance. See [features and milestones](docs/PRODUCT_SPEC.md) and [status](docs/STATUS.md).
 
@@ -63,6 +65,8 @@ curl -X POST 'http://127.0.0.1:8123/api/ingest/DEVICE_ID' \
   -H 'Content-Type: application/json' \
   --data '{"latitude":35.96,"longitude":-83.92,"accuracy_m":12}'
 ```
+
+Native OwnTracks HTTP senders can use the same registered tracker with Basic username `owntracks` and the device's one-time token as its password. See the [OwnTracks HTTP setup and privacy boundaries](docs/OWNTRACKS_HTTP.md). TLS and real-device validation are still required.
 
 The example coordinates are illustrative, not real user data. An ingestion token can only upload positions for its single associated device; it cannot read private history. Rotate the token using the **Rotate key** action in Devices, or POST `/api/devices/{id}/rotate-token`. Old tokens become invalid immediately and history is preserved; update your tracking client with the new key.
 
