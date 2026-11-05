@@ -45,6 +45,10 @@ class DeviceIn(StrictModel):
     kind: str = Field(default="person", pattern=r"^(person|vehicle|pet|item|asset|other)$")
 
 
+class TrackingControlIn(StrictModel):
+    paused: StrictBool
+
+
 class PlaceIn(StrictModel):
     name: str = Field(min_length=1, max_length=80)
     latitude: float = Field(ge=-90, le=90)
