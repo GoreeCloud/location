@@ -178,3 +178,14 @@ No native mobile functionality or production deployment is implied. Full GC UI v
 - Verification: [GitHub Actions run 41639265596](https://github.com/GoreeCloud/location/actions/runs/41639265596) passed the **31 API tests** plus real Chromium keyboard/dialog interaction journeys at desktop, tablet and phone sizes; [PR #13](https://github.com/GoreeCloud/location/pull/13) merged to main. The tests check accessible dialog names/descriptions and safe Escape dismissal; no production data was changed.
 
 Retain explicit limits: this is an automated Chromium keyboard smoke check, not a complete screen-reader or WCAG audit.
+
+## Development cycle 12 — geofence chronology correctness
+
+**Candidate fix under CI review (5 November 2026):**
+
+- Only strictly newer recorded GPS timestamps can update a device's current geofence state.
+- Preserve equal-timestamp/conflicting positions and older backfill as account-private history without generating contradictory arrival/departure events.
+- Apply the same safeguard to account-authenticated uploads, GPS hardware-token uploads and chronological CSV imports.
+- Regression tests exercise equal-time conflicts, historical backfill, authentic later transitions, account separation and upload-channel consistency.
+
+**Not yet verified:** CI results for this branch, concurrent-writer ordering, clock spoofing, native tracking hardware, and emergency-response reliability. No production GPS history or live services are changed.
