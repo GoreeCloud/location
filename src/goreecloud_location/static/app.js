@@ -65,13 +65,41 @@ function signedIn(user) {
 function signOutLocal() {
   state.token = "";
   state.user = null;
+  state.devices = [];
+  state.points = [];
+  state.places = [];
+  state.events = [];
+  state.selectedHistoryDevice = "";
+  state.zoomAdjust = 0;
   state.retentionPreview = null;
-  $("retention-confirm").value = "";
-  text("retention-summary", "No preview yet.");
   sessionStorage.removeItem("gc-location-session");
   $("app-shell").hidden = true;
   $("login-screen").hidden = false;
+  $("username").value = "";
   $("password").value = "";
+  $("login-feedback").hidden = true;
+  $("retention-confirm").value = "";
+  text("retention-summary", "No preview yet.");
+  $("device-form").reset();
+  $("place-form").reset();
+  $("history-import-file").value = "";
+  if ($("secret-dialog").open) $("secret-dialog").close();
+  if ($("erase-dialog").open) $("erase-dialog").close();
+  text("device-secret", "");
+  text("user-label", "");
+  text("user-avatar", "");
+  clearTimeout(showToast.timer);
+  $("toast").textContent = "";
+  $("toast").hidden = true;
+  // Clear location coordinates, map pins and lists from the DOM as well as
+  // application state, including when another account signs into this tab.
+  renderRecent();
+  renderDevices();
+  renderPlaces();
+  renderHistory();
+  renderEvents();
+  renderCaptureSelect();
+  renderMap();
 }
 function selectView(view) {
   if (!headings[view]) return;
