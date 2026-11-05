@@ -4,7 +4,7 @@
 
 ## Import through the browser
 
-Open **History**, select a specific registered device, choose a `.gpx` file and select **Import GPX**. The History page reports the number of imported and skipped duplicate points. This action changes only the chosen account-owned device's live SQLite history. Create an independently protected backup first if you may need to reverse the change.
+Open **History**, select a specific registered device, choose a `.gpx` file using the shared History file picker, and select **Import file**. The same control accepts `.csv` and `.geojson` files. The History page reports the number of imported and skipped duplicate points. This action changes only the chosen account-owned device's live SQLite history. Create an independently protected backup first if you may need to reverse the change.
 
 ## HTTP endpoint
 
