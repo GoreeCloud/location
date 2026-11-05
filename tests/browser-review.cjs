@@ -30,7 +30,7 @@ async function run(){
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"gc-location-qa-"));
  const env={...process.env,GC_LOCATION_DB:path.join(dir,"synthetic.sqlite")};
  execFileSync(python,["-c",
-  "from goreecloud_location.store import initialize,create_account,default_db_path; p=default_db_path(); initialize(p); [create_account(p,u,'synthetic browser acceptance test password') for u in ('browserdesktop','browsertablet','browsermobile')]"],{env});
+  "from goreecloud_location.store import initialize,create_account,default_db_path; p=default_db_path(); initialize(p); [create_account(p,u,'synthetic browser acceptance test password') for u in ('browserdesktop','browsertablet','browsermobile','browserotherdesktop','browserothertablet','browserothermobile')]"],{env});
  const port=await portNumber(),url="http://127.0.0.1:"+port;
  const proc=spawn(python,["-m","goreecloud_location.cli","serve","--host","127.0.0.1","--port",String(port)],{env,stdio:"ignore"});
  let browser=null;
@@ -180,6 +180,44 @@ async function run(){
    }
    await page.locator("#login-screen").waitFor({state:"visible"});
    assert.equal(await page.locator("#app-shell").isVisible(),false);
+   const cleared=await page.evaluate(()=>({
+     deviceCount:state.devices.length,pointCount:state.points.length,
+     placeCount:state.places.length,eventCount:state.events.length,
+     retainedSelection:state.selectedHistoryDevice,
+     mapCoordinates:document.querySelector("#map-coordinates").textContent,
+     oldDeviceText:document.querySelector("#devices-list").textContent,
+     secret:document.querySelector("#device-secret").textContent,
+     rows:document.querySelector("#history-table").textContent,
+     toast:document.querySelector("#toast").textContent
+   }));
+   assert.deepEqual(
+     [cleared.deviceCount,cleared.pointCount,cleared.placeCount,cleared.eventCount],
+     [0,0,0,0],"Signed-out session must not retain private point arrays");
+   assert.equal(cleared.retainedSelection,"");
+   assert.equal(cleared.mapCoordinates,"Waiting for location");
+   assert.equal(cleared.secret,"");
+   assert.equal(cleared.toast,"");
+   assert.doesNotMatch(cleared.oldDeviceText+cleared.rows,/Synthetic /);
+
+   // A second account must never see the first user's location, even
+   // briefly before its own initial refresh has finished.
+   await page.locator("#username").fill("browserother"+v.name);
+   await page.locator("#password").fill(pass);
+   await page.locator("#login-form button[type=submit]").click();
+   await page.locator("#app-shell").waitFor({state:"visible"});
+   await page.waitForFunction(()=>
+     document.querySelector("#metric-points").textContent.trim()==="0");
+   assert.equal(await page.locator("#metric-points").textContent(),"0");
+   assert.equal(await page.locator("#metric-devices").textContent(),"0");
+   await nav("history").click();
+   assert.match(await page.locator("#history-table").innerText(),/No matching location records/);
+   assert.doesNotMatch(await page.locator("#devices-list").innerText(),/Synthetic /);
+   assert.equal(await page.locator("#map-markers").locator("*").count(),0);
+   const secondLogout=page.locator(v.width<=680?"#mobile-logout":"#logout");
+   await secondLogout.click();
+   await page.locator("#login-screen").waitFor({state:"visible"});
+   assert.deepEqual(errors,[],"No session-switch JS errors");
+   assert.deepEqual(external,[],"No third-party requests during account switch");
    console.log("PASS",v.name,geometry);
    await ctx.close();
   }

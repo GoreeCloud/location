@@ -108,3 +108,9 @@ Requests are bounded to 16 KiB and validated before any database writes. The dev
 ## GeoJSON history import isolation
 
 The account-session-only GeoJSON importer reads a maximum 2 MiB body containing at most 5,000 RFC 7946 `Point` features. It rejects invalid and non-finite JSON, wrong geometry or coordinate ordering/type, missing timezone-aware timestamps, and malformed telemetry without partially writing history. It stores only validated location/telemetry fields; arbitrary identity, URL, Wi-Fi, map-provider and custom properties are ignored, never rendered or fetched. User-supplied FeatureCollection data cannot create places, groups, notifications or any cross-account sharing. The same owner-scoped SQLite transaction and duplicate checks apply as CSV and GPX imports. Real-world hostile-file fuzzing and production load/security acceptance remain unverified.
+
+## In-tab session isolation and private browser state
+
+When a user signs out, the web dashboard clears its in-memory account/device arrays, selected device, map coordinates and pins, rendered history, forms, open one-time key dialog and transient notification text. It also deletes the session token from `sessionStorage`. A completed or delayed API refresh is applied only if its original session token still matches the active session; a late 401 from a prior session cannot sign out a newly authenticated user.
+
+This prevents accidental carryover of a prior account's GPS display within a reused browser tab. It does **not** prove forensic erasure from JavaScript heap memory, browser caches, screenshots, downloaded exports, developer tools, device storage or backups. Operators should use isolated trusted browser profiles for sensitive multiuser environments. Sensitive GPS responses remain marked no-store and server-side owner checks still enforce access boundaries.
