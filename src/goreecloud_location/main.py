@@ -267,6 +267,16 @@ def create_app(db_path: Path | None = None) -> FastAPI:
             db.execute("DELETE FROM sessions WHERE token_hash=?", (token_digest(creds.credentials),))
         return Response(status_code=204)
 
+    @app.post("/api/auth/logout-all", status_code=204)
+    def logout_all(user=Depends(account)):
+        """Revoke every login session owned by this account, including this one.
+
+        Device ingestion keys are separate credentials and are not revoked.
+        """
+        with connect(path) as db:
+            db.execute("DELETE FROM sessions WHERE account_id=?", (user["id"],))
+        return Response(status_code=204)
+
     @app.get("/api/me")
     def me(user=Depends(account)):
         return user
