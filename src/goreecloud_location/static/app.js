@@ -537,35 +537,29 @@ function setupEvents() {
   $("history-device").addEventListener("change", (event) => {
     state.selectedHistoryDevice = event.target.value; renderHistory();
   });
-  $("import-csv").addEventListener("click", async () => {
+  $("history-import").addEventListener("click", async () => {
     const selected = state.selectedHistoryDevice;
-    const file = $("import-csv-file").files[0];
+    const chooser = $("history-import-file");
+    const file = chooser.files[0];
     if (!selected) return showToast("Choose one device in the timeline filter before importing.");
-    if (!file) return showToast("Select a UTF-8 CSV file first.");
-    if (file.size > 2097152) return showToast("CSV import must be at most 2 MiB.");
+    if (!file) return showToast("Choose a CSV, GPX or GeoJSON file first.");
+    const formats = {
+      csv: {path:"csv", media:"text/csv"},
+      gpx: {path:"gpx", media:"application/gpx+xml"},
+      geojson: {path:"geojson", media:"application/geo+json"}
+    };
+    const extension = file.name.split(".").pop().toLowerCase();
+    const format = formats[extension];
+    if (!format) return showToast("Choose a .csv, .gpx or .geojson file.");
+    if (file.size > 2097152) return showToast("History imports are limited to 2 MiB.");
     try {
-      const response = await api("/api/devices/" + encodeURIComponent(selected) + "/import/csv", {
-        method: "POST", headers: {"Content-Type": "text/csv"}, body: file
+      const response = await api("/api/devices/" + encodeURIComponent(selected)
+        + "/import/" + format.path, {
+        method: "POST", headers: {"Content-Type": format.media}, body: file
       });
-      $("import-csv-file").value = "";
+      chooser.value = "";
       await refresh();
       showToast("Imported " + response.imported + " positions; skipped "
-        + response.skipped_duplicates + " duplicates.");
-    } catch (error) { showToast(error.message); }
-  });
-  $("import-gpx").addEventListener("click", async () => {
-    const selected = state.selectedHistoryDevice;
-    const file = $("import-gpx-file").files[0];
-    if (!selected) return showToast("Choose one device in the timeline filter before importing.");
-    if (!file) return showToast("Select a GPX track file first.");
-    if (file.size > 2097152) return showToast("GPX import must be at most 2 MiB.");
-    try {
-      const response = await api("/api/devices/" + encodeURIComponent(selected) + "/import/gpx", {
-        method: "POST", headers: {"Content-Type": "application/gpx+xml"}, body: file
-      });
-      $("import-gpx-file").value = "";
-      await refresh();
-      showToast("Imported " + response.imported + " GPX points; skipped "
         + response.skipped_duplicates + " duplicates.");
     } catch (error) { showToast(error.message); }
   });
