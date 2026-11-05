@@ -44,6 +44,15 @@ async function run(){
    page.on("pageerror",e=>errors.push(e.message));
    page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
    page.on("request",q=>{const u=q.url();if(!u.startsWith(url+"/")&&!u.startsWith("data:")&&!u.startsWith("blob:"))external.push(u);});
+   if(v.name==="mobile") {
+     // Inject a malformed setting to verify the browser still never reaches
+     // an off-host tile endpoint, even if /api/config is compromised.
+     const maliciousPath="/"+String.fromCharCode(92)+"external.invalid/{z}/{x}/{y}.png";
+     await page.route("**/api/config",route=>route.fulfill({
+       status:200,contentType:"application/json",
+       body:JSON.stringify({tile_template:maliciousPath,self_hosted:true})
+     }));
+   }
    await page.goto(url,{waitUntil:"networkidle"});
    assert.equal(await page.locator("#login-screen").isVisible(),true);
    await page.screenshot({path:path.join(evidence,v.name+"-login.png"),fullPage:true});
