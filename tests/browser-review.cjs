@@ -88,7 +88,8 @@ async function run(){
    const tokenDialog=page.getByRole("dialog",{name:"Device added successfully"});
    await tokenDialog.waitFor({state:"visible"});
    assert.equal(await tokenDialog.getAttribute("aria-describedby"),"secret-description");
-   assert.ok((await page.locator("#device-secret").textContent()).length>32);
+   const deviceUploadToken=await page.locator("#device-secret").textContent();
+   assert.ok(deviceUploadToken.length>32);
    await page.screenshot({path:path.join(evidence,v.name+"-device-dialog.png"),fullPage:true,mask:[page.locator("#device-secret")]});
    await page.locator("#close-secret").focus();
    await page.keyboard.press("Enter");
@@ -100,6 +101,29 @@ async function run(){
    assert.equal(await eraseDialog.getAttribute("aria-describedby"),"erase-description");
    await page.keyboard.press("Escape");
    await eraseDialog.waitFor({state:"hidden"});
+
+   // Pausing a registered tracker blocks every server-side collection path.
+   const deviceId=await page.evaluate(()=>state.devices[0]?.id);
+   const deviceName="Synthetic "+v.name+" device";
+   const pauseButton=page.getByRole("button",{
+     name:"Pause location collection for "+deviceName
+   });
+   page.once("dialog",dialog=>dialog.accept());
+   await pauseButton.click();
+   const resumeButton=page.getByRole("button",{
+     name:"Resume location collection for "+deviceName
+   });
+   await resumeButton.waitFor({state:"visible"});
+   assert.equal(await page.locator("#capture-location").isDisabled(),true);
+   const pausedReply=await page.request.post(url+"/api/ingest/"+deviceId,{
+     headers:{"Authorization":"Bearer "+deviceUploadToken},
+     data:{"latitude":35.987,"longitude":-83.915,"accuracy_m":12}
+   });
+   assert.equal(pausedReply.status(),409,"Paused tracker must reject device-token uploads");
+   page.once("dialog",dialog=>dialog.accept());
+   await resumeButton.click();
+   await pauseButton.waitFor({state:"visible"});
+   assert.equal(await page.locator("#capture-location").isDisabled(),false);
    await nav("overview").click();
    await ctx.grantPermissions(["geolocation"],{origin:url});
    await ctx.setGeolocation({latitude:35.987,longitude:-83.915,accuracy:12});
