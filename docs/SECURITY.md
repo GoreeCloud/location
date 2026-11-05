@@ -84,3 +84,9 @@ Live geofence state changes only for a device point whose normalized UTC recorde
 ## Concurrent location ingestion
 
 Ingestion through owner sessions, registered-device tokens and CSV imports reserves the SQLite writer lock before querying the latest device position, then commits the point and its geofence state/event updates in one transaction. This is a single-database concurrency safeguard; it reduces contradictory alerts under simultaneous uploads and maintains a 15-second lock timeout. High load may still lead to rejected requests, and this should not be described as guaranteed delivery or reliable emergency response. Multi-server deployments, retries, queueing and broader transaction boundaries remain unverified and require dedicated design and stress tests.
+
+## Map tile network isolation
+
+The optional `GC_TILE_TEMPLATE` setting is restricted to a same-origin absolute path beginning with a single `/`. The API rejects scheme/host URLs, leading double-slash paths, backslashes and control characters. Browsers may otherwise normalize `/\host` to `//host`, making an apparently local tile template contact a third party. The frontend also resolves each resulting tile URL and checks that its origin matches the application origin before creating an image request. The Content Security Policy restricts images to `'self'` and `data:`, rather than allowing arbitrary external HTTPS image hosts.
+
+**Limits:** The same-origin tile server or reverse proxy remains an operator-controlled deployment dependency and can itself log or redirect requests. Protect its access logs, reject external redirects at the proxy, and independently verify production network behavior. These checks do not install any tile data or make an external map provider available.
