@@ -72,6 +72,11 @@ function signOutLocal() {
   state.places = [];
   state.events = [];
   state.selectedHistoryDevice = "";
+  state.historyItems = [];
+  state.historyCursor = null;
+  state.historyHasMore = false;
+  state.historyLoading = false;
+  state.historySequence++;
   state.zoomAdjust = 0;
   state.retentionPreview = null;
   sessionStorage.removeItem("gc-location-session");
