@@ -607,6 +607,8 @@ def create_app(db_path: Path | None = None) -> FastAPI:
             api_error(422, "OwnTracks JSON must be an object")
 
         kind = data.get("_type")
+        if not isinstance(kind, str):
+            api_error(422, "Unsupported OwnTracks message type")
         # OwnTracks sends transition, waypoint and status messages as well.
         # Device-reported transitions are not trusted as server geofences.
         if kind in {"lwt", "status", "transition", "waypoint", "beacon",
