@@ -155,8 +155,11 @@ def create_app(db_path: Path | None = None) -> FastAPI:
              point.battery_percent, stamp, utc_now()),
         )
         alerts = []
-        # Old imported positions never mutate the current geofence state.
-        if last and stamp < last["recorded_at"]:
+        # Only strictly newer observations can update current geofence state.
+        # A conflicting position at the exact same recorded millisecond is
+        # historical/ambiguous; allowing it to flip state can invent a false
+        # arrival/departure alert. Preserve the point for review and export.
+        if last and stamp <= last["recorded_at"]:
             return {"id": cur.lastrowid, "recorded_at": stamp, "events": alerts}
         for place in db.execute(
             "SELECT * FROM places WHERE account_id=?", (device["account_id"],)
