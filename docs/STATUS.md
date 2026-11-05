@@ -284,3 +284,15 @@ Verification: [PR #21](https://github.com/GoreeCloud/location/pull/21) merged af
 Verification: [PR #22](https://github.com/GoreeCloud/location/pull/22) merged after [GitHub CI run 42111807749](https://github.com/GoreeCloud/location/actions/runs/42111807749) passed **77 API tests**, Python compilation, JavaScript syntax, and Playwright desktop/tablet/phone journeys uploading CSV, GPX and GeoJSON. The browser also rejected a `.txt` file before any HTTP import request. All data was synthetic.
 
 This is not full external-file interoperability, screen-reader acceptance, physical-device testing or production deployment.
+
+## Development cycle 21 — owner-controlled device collection pause
+
+**Candidate under GitHub CI review (5 November 2026):**
+
+- Add persisted owner-scoped pause and resume timestamps to registered devices using an additive, serialized SQLite migration that preserves existing records and keys.
+- Add `PUT /api/devices/{id}/collection` with strict Boolean validation, transactional ownership checks and idempotent state changes.
+- Reject new owner, tracker-token, OwnTracks and CSV/GPX/GeoJSON device writes while paused. Resume rejects queued live fixes recorded before the server cutoff; deliberate owner archive imports remain possible after resume without retroactive alerts.
+- Reset live geofence baseline on resume. Add UI controls and disable browser GPS capture for paused devices.
+- Add API tests for account isolation, all ingestion routes, old timestamps, post-resume fences and existing-database migration, plus synthetic Chromium journeys at desktop/tablet/mobile widths.
+
+**Limits:** Client GPS hardware may continue local recording, timestamps are untrusted, no family/third-party consent workflow exists, and no production deployment is authorized.
