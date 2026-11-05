@@ -18,6 +18,8 @@ from pathlib import Path
 from typing import Literal
 import secrets
 from xml.etree import ElementTree
+from defusedxml.ElementTree import fromstring as safe_xml_fromstring
+from defusedxml.common import DefusedXmlException
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
@@ -209,6 +211,33 @@ def create_app(db_path: Path | None = None) -> FastAPI:
                 )
                 alerts.append({"kind": kind, "place": place["name"]})
         return {"id": cur.lastrowid, "recorded_at": stamp, "events": alerts}
+
+    def import_validated_batch(owner_id: int, device_id: int,
+                               pending: list[tuple[str, PointIn]]):
+        """Commit a previously validated history batch with shared deduplication.
+
+        CSV and GPX imports use identical owner checks, chronology and
+        transactional geofence semantics; any database error rolls back all.
+        """
+        pending.sort(key=lambda item: item[0])
+        imported = duplicates = generated_events = 0
+        with connect(path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            device = owned_device(db, owner_id, device_id)
+            for stamp, point in pending:
+                seen = db.execute(
+                    """SELECT 1 FROM points WHERE device_id=? AND recorded_at=?
+                       AND latitude=? AND longitude=? LIMIT 1""",
+                    (device_id, stamp, point.latitude, point.longitude),
+                ).fetchone()
+                if seen:
+                    duplicates += 1
+                    continue
+                result = ingest(db, device, point)
+                imported += 1
+                generated_events += len(result["events"])
+        return {"device_id": device_id, "imported": imported,
+                "skipped_duplicates": duplicates, "geofence_events": generated_events}
 
     @app.middleware("http")
     async def safety_headers(request: Request, call_next):
@@ -516,27 +545,69 @@ def create_app(db_path: Path | None = None) -> FastAPI:
             api_error(422, "Malformed CSV document")
         if not pending:
             api_error(422, "CSV contains no location records")
-        pending.sort(key=lambda item: item[0])
-        imported = duplicates = generated_events = 0
+        return import_validated_batch(user["id"], device_id, pending)
+
+    @app.post("/api/devices/{device_id}/import/gpx", status_code=201)
+    async def import_gpx(device_id: int, request: Request, user=Depends(account)):
+        """Owner-controlled, atomic import of timestamped GPX track points.
+
+        DefusedXML rejects DTD, entity and external resource use. This path
+        imports trk/trkseg/trkpt only, never waypoints or user-supplied alerts.
+        """
+        content_type = request.headers.get("content-type", "").split(";", 1)[0].lower().strip()
+        if content_type not in {"application/gpx+xml", "application/xml", "text/xml"}:
+            api_error(415, "GPX must use application/gpx+xml or XML content type")
         with connect(path) as db:
-            # SQLite writer reservation must precede the latest-point read
-            # inside ingest(), including all rows in this CSV batch.
-            db.execute("BEGIN IMMEDIATE")
             owned_device(db, user["id"], device_id)
-            for stamp, point in pending:
-                seen = db.execute(
-                    """SELECT 1 FROM points WHERE device_id=? AND recorded_at=?
-                       AND latitude=? AND longitude=? LIMIT 1""",
-                    (device_id, stamp, point.latitude, point.longitude),
-                ).fetchone()
-                if seen:
-                    duplicates += 1
-                    continue
-                result = ingest(db, device, point)
-                imported += 1
-                generated_events += len(result["events"])
-        return {"device_id": device_id, "imported": imported,
-                "skipped_duplicates": duplicates, "geofence_events": generated_events}
+
+        payload = bytearray()
+        async for chunk in request.stream():
+            if len(payload) + len(chunk) > 2_097_152:
+                api_error(413, "GPX is limited to 2 MiB")
+            payload.extend(chunk)
+        if not payload:
+            api_error(422, "GPX file is empty")
+        try:
+            root = safe_xml_fromstring(
+                bytes(payload), forbid_dtd=True,
+                forbid_entities=True, forbid_external=True,
+            )
+        except (ElementTree.ParseError, DefusedXmlException, ValueError, RecursionError):
+            api_error(422, "Malformed or unsafe GPX document")
+
+        namespaces = {
+            "http://www.topografix.com/GPX/1/0",
+            "http://www.topografix.com/GPX/1/1",
+        }
+        if not any(root.tag == f"{{{ns}}}gpx" for ns in namespaces):
+            api_error(422, "Expected GPX 1.0 or 1.1 document")
+        ns = root.tag.rsplit("}", 1)[0][1:]
+        tag = lambda name: f"{{{ns}}}{name}"
+        trackpoints = root.findall(
+            f"{tag('trk')}/{tag('trkseg')}/{tag('trkpt')}"
+        )
+        if len(trackpoints) > 5000:
+            api_error(413, "GPX is limited to 5,000 track points")
+        if not trackpoints:
+            api_error(422, "GPX contains no track points")
+
+        pending: list[tuple[str, PointIn]] = []
+        for number, element in enumerate(trackpoints, start=1):
+            try:
+                values = {
+                    "latitude": element.attrib["lat"],
+                    "longitude": element.attrib["lon"],
+                    "recorded_at": element.findtext(tag("time")),
+                }
+                elevation = element.findtext(tag("ele"))
+                if elevation is not None:
+                    values["altitude_m"] = elevation
+                point = PointIn.model_validate(values)
+                stamp = timestamp_for(point.recorded_at)
+            except (KeyError, ValidationError, ValueError, TypeError):
+                api_error(422, f"GPX track point {number} is invalid")
+            pending.append((stamp, point))
+        return import_validated_batch(user["id"], device_id, pending)
 
     @app.post("/api/locations", status_code=201)
     def create_point(body: UserPointIn, user=Depends(account)):
