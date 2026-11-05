@@ -41,11 +41,13 @@ def test_gpx_import_is_sorted_idempotent_and_owner_scoped(client):
     assert first.status_code == 201, first.text
     assert first.json() == {
         "device_id": d["id"], "imported": 2,
-        "skipped_duplicates": 1, "geofence_events": 1,
+        "skipped_duplicates": 1, "geofence_events": 0,
     }
     assert client.get("/api/summary", headers=alice).json()["points"] == 2
     assert client.get("/api/summary", headers=bob).json()["points"] == 0
-    assert [e["kind"] for e in client.get("/api/events", headers=alice).json()] == ["arrival"]
+    # GPX track points contain no accuracy value; absent accuracy must not
+    # invent a geofence arrival notification during historical import.
+    assert client.get("/api/events", headers=alice).json() == []
     assert client.get("/api/events", headers=bob).json() == []
 
     repeated = upload(client, alice, d["id"], data)
