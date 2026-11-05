@@ -467,6 +467,35 @@ def create_app(db_path: Path | None = None) -> FastAPI:
             ).fetchall()
         return [rowdict(row) for row in rows]
 
+    @app.put("/api/devices/{device_id}/collection")
+    def set_device_collection(device_id: int, body: TrackingControlIn,
+                              user=Depends(account)):
+        """Change server collection without deleting historical records.
+
+        All ingestion endpoints check this flag in a SQLite write
+        transaction. Resumption records a cutoff for queued live fixes.
+        """
+        with connect(path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            device = owned_device(db, user["id"], device_id)
+            was_paused = bool(device["tracking_paused"])
+            if body.paused != was_paused:
+                if body.paused:
+                    db.execute(
+                        "UPDATE devices SET tracking_paused=1 WHERE id=? AND account_id=?",
+                        (device_id, user["id"]),
+                    )
+                else:
+                    db.execute(
+                        """UPDATE devices SET tracking_paused=0,tracking_resumed_at=?
+                           WHERE id=? AND account_id=?""",
+                        (utc_now(), device_id, user["id"]),
+                    )
+            current = owned_device(db, user["id"], device_id)
+            return {"device_id": device_id,
+                    "tracking_paused": bool(current["tracking_paused"]),
+                    "tracking_resumed_at": current["tracking_resumed_at"]}
+
     @app.post("/api/devices/{device_id}/rotate-token")
     def rotate_device_token(device_id: int, user=Depends(account)):
         """Issue a replacement write-only token without deleting the device's history.
