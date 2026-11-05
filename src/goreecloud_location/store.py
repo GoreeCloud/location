@@ -114,6 +114,17 @@ def initialize(path: Path) -> None:
             CREATE INDEX IF NOT EXISTS idx_events_device_time
                 ON events(device_id, recorded_at DESC, id DESC);
         """)
+        # Preserve existing self-hosted databases while adding a reversible
+        # owner collection switch. No GPS history or tracker credentials change.
+        # Serialize migrations across concurrent service starts.
+        db.execute("BEGIN IMMEDIATE")
+        columns = {row["name"] for row in db.execute("PRAGMA table_info(devices)")}
+        if "tracking_paused" not in columns:
+            db.execute(
+                "ALTER TABLE devices ADD COLUMN tracking_paused INTEGER NOT NULL DEFAULT 0 CHECK (tracking_paused IN (0,1))"
+            )
+        if "tracking_resumed_at" not in columns:
+            db.execute("ALTER TABLE devices ADD COLUMN tracking_resumed_at TEXT")
 
 
 @contextmanager

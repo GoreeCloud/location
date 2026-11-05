@@ -13,6 +13,7 @@ All routes below use JSON unless otherwise noted. There are **no public location
 | GET | `/api/summary` | User session | Counts of devices, points, places, events |
 | GET | `/api/devices` | User session | Owner devices with last positions |
 | POST | `/api/devices` | User session | Create device; receive ingestion token once |
+| PUT | `/api/devices/{id}/collection` | Owner session | Pause or resume new GPS collection without erasing history |
 | POST | `/api/devices/{id}/rotate-token` | Owner session | Issue new device upload token, revoke previous token, preserve history |
 | DELETE | `/api/devices/{id}/history` | Owner session | Delete device points, events and fence state; retain device/key |
 | DELETE | `/api/devices/{id}` | Owner session | Delete device and all its positions/events |
@@ -123,3 +124,7 @@ POST `/api/devices/{id}/import/gpx` with an account bearer token and raw GPX XML
 ## GeoJSON Point history import
 
 POST `/api/devices/{id}/import/geojson` with the account bearer session and raw GeoJSON (`Content-Type: application/geo+json`). Accepts RFC 7946 `FeatureCollection` containing timestamped `Point` features with longitude/latitude coordinates, optional altitude and only supported GPS properties. Rejects malformed/non-finite JSON, unsupported geometries, absent timezone-aware timestamps and oversized files before writing. Limits: 2 MiB and 5,000 features, shared duplicate/transaction semantics with CSV and GPX. Additional features/metadata are ignored, never used for account sharing or saved places. [Configuration and limitations](GEOJSON_IMPORT.md).
+
+## Per-device collection pause
+
+`PUT /api/devices/{id}/collection` requires an account bearer token and JSON `{"paused":true}` or `{"paused":false}`. Only a strict Boolean is accepted. The owner-specific response provides `device_id`, `tracking_paused`, and `tracking_resumed_at`; the device listing includes the same state. While paused, `/api/locations`, device bearer ingestion, OwnTracks location uploads and all owner archive import routes return HTTP 409 without adding points. Resuming sets a UTC cutoff that rejects queued live locations recorded before or at the cutoff, while allowing deliberately imported older history after resuming. Resumption resets the geofence baseline, not existing events. Tokens are retained and exports/erasure remain available. [Setup and caveats](COLLECTION_CONTROL.md).

@@ -208,7 +208,32 @@ function renderDevices() {
     const info = elt("div", "list-body");
     info.append(elt("strong", "", d.name),
                 elt("p", "", d.recorded_at ? "Last position · " + fmtTime(d.recorded_at) : "Awaiting first position"));
+    info.append(elt("p", "", d.tracking_paused
+      ? "Collection paused · uploads blocked"
+      : "Collection active"));
     const small = elt("span", "list-time", d.kind);
+    const toggle = elt("button", "tiny-action",
+      d.tracking_paused ? "Resume collection" : "Pause collection");
+    toggle.type = "button";
+    toggle.setAttribute("aria-label", (d.tracking_paused ? "Resume" : "Pause")
+      + " location collection for " + d.name);
+    toggle.addEventListener("click", async () => {
+      const paused = !Boolean(d.tracking_paused);
+      const warning = paused
+        ? "Pause incoming GPS uploads for " + d.name
+          + "? Existing history remains. The tracker may continue to record locally."
+        : "Resume GPS collection for " + d.name
+          + "? A new live geofence baseline will be created.";
+      if (!window.confirm(warning)) return;
+      try {
+        await api("/api/devices/" + d.id + "/collection", {
+          method: "PUT", body: JSON.stringify({paused})
+        });
+        await refresh();
+        showToast(paused ? "Collection paused for " + d.name + "."
+          : "Collection resumed for " + d.name + ".");
+      } catch (error) { showToast(error.message); }
+    });
     const rotate = elt("button", "tiny-action", "Rotate key");
     rotate.type = "button";
     rotate.setAttribute("aria-label", "Rotate ingestion key for " + d.name);
@@ -236,7 +261,7 @@ function renderDevices() {
       } catch (error) { showToast(error.message); }
     });
     const actions = elt("div", "item-actions");
-    actions.append(rotate, erase);
+    actions.append(toggle, rotate, erase);
     row.append(avatar, info, small, actions);
     node.append(row);
   }
@@ -273,14 +298,16 @@ function renderCaptureSelect() {
   const select = $("capture-device");
   const old = select.value;
   select.replaceChildren();
-  if (!state.devices.length) {
-    makeChoice(select, "", "Add a device first");
+  const active = state.devices.filter((d) => !d.tracking_paused);
+  if (!active.length) {
+    makeChoice(select, "", state.devices.length
+      ? "All devices paused · resume in Devices" : "Add a device first");
     select.disabled = true;
     $("capture-location").disabled = true;
     return;
   }
-  for (const d of state.devices) makeChoice(select, d.id, d.name);
-  if (state.devices.some((d) => String(d.id) === old)) select.value = old;
+  for (const d of active) makeChoice(select, d.id, d.name);
+  if (active.some((d) => String(d.id) === old)) select.value = old;
   select.disabled = false;
   $("capture-location").disabled = false;
 }

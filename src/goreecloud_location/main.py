@@ -25,7 +25,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Res
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, ValidationError
 
 from .security import LoginAttemptLimiter
 from .store import connect, default_db_path, hash_password, initialize, token_digest, utc_now, verify_password
@@ -43,6 +43,10 @@ class LoginIn(StrictModel):
 class DeviceIn(StrictModel):
     name: str = Field(min_length=1, max_length=80)
     kind: str = Field(default="person", pattern=r"^(person|vehicle|pet|item|asset|other)$")
+
+
+class TrackingControlIn(StrictModel):
+    paused: StrictBool
 
 
 class PlaceIn(StrictModel):
@@ -160,8 +164,13 @@ def create_app(db_path: Path | None = None) -> FastAPI:
             api_error(404, "Device not found")
         return row
 
-    def ingest(db, device, point: PointIn):
+    def ingest(db, device, point: PointIn, *, historical_import: bool = False):
+        if device["tracking_paused"]:
+            api_error(409, "Collection is paused for this device")
         stamp = timestamp_for(point.recorded_at)
+        if (not historical_import and device["tracking_resumed_at"]
+                and stamp <= device["tracking_resumed_at"]):
+            api_error(409, "Fix was recorded before this device resumed collection")
         last = db.execute(
             """SELECT recorded_at FROM points WHERE device_id=?
                ORDER BY recorded_at DESC, id DESC LIMIT 1""",
@@ -177,6 +186,11 @@ def create_app(db_path: Path | None = None) -> FastAPI:
              point.battery_percent, stamp, utc_now()),
         )
         alerts = []
+        # Explicit historical backfill from before resumption may be stored,
+        # but must not generate fresh arrival/departure notifications.
+        if (historical_import and device["tracking_resumed_at"]
+                and stamp <= device["tracking_resumed_at"]):
+            return {"id": cur.lastrowid, "recorded_at": stamp, "events": alerts}
         # Only strictly newer observations can update current geofence state.
         # A conflicting position at the exact same recorded millisecond is
         # historical/ambiguous; allowing it to flip state can invent a false
@@ -224,6 +238,8 @@ def create_app(db_path: Path | None = None) -> FastAPI:
         with connect(path) as db:
             db.execute("BEGIN IMMEDIATE")
             device = owned_device(db, owner_id, device_id)
+            if device["tracking_paused"]:
+                api_error(409, "Collection is paused for this device")
             for stamp, point in pending:
                 seen = db.execute(
                     """SELECT 1 FROM points WHERE device_id=? AND recorded_at=?
@@ -233,7 +249,7 @@ def create_app(db_path: Path | None = None) -> FastAPI:
                 if seen:
                     duplicates += 1
                     continue
-                result = ingest(db, device, point)
+                result = ingest(db, device, point, historical_import=True)
                 imported += 1
                 generated_events += len(result["events"])
         return {"device_id": device_id, "imported": imported,
@@ -446,7 +462,7 @@ def create_app(db_path: Path | None = None) -> FastAPI:
     def devices(user=Depends(account)):
         with connect(path) as db:
             rows = db.execute(
-                """SELECT d.id,d.name,d.kind,d.created_at,
+                """SELECT d.id,d.name,d.kind,d.created_at,d.tracking_paused,d.tracking_resumed_at,
                           p.latitude,p.longitude,p.recorded_at,p.accuracy_m,p.battery_percent
                    FROM devices d LEFT JOIN points p ON p.id = (
                        SELECT id FROM points WHERE device_id=d.id
@@ -455,6 +471,37 @@ def create_app(db_path: Path | None = None) -> FastAPI:
                 (user["id"],),
             ).fetchall()
         return [rowdict(row) for row in rows]
+
+    @app.put("/api/devices/{device_id}/collection")
+    def set_device_collection(device_id: int, body: TrackingControlIn,
+                              user=Depends(account)):
+        """Change server collection without deleting historical records.
+
+        All ingestion endpoints check this flag in a SQLite write
+        transaction. Resumption records a cutoff for queued live fixes.
+        """
+        with connect(path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            device = owned_device(db, user["id"], device_id)
+            was_paused = bool(device["tracking_paused"])
+            if body.paused != was_paused:
+                if body.paused:
+                    db.execute(
+                        "UPDATE devices SET tracking_paused=1 WHERE id=? AND account_id=?",
+                        (device_id, user["id"]),
+                    )
+                else:
+                    db.execute(
+                        """UPDATE devices SET tracking_paused=0,tracking_resumed_at=?
+                           WHERE id=? AND account_id=?""",
+                        (utc_now(), device_id, user["id"]),
+                    )
+                    # No transition can be inferred across a paused interval.
+                    db.execute("DELETE FROM geofence_state WHERE device_id=?", (device_id,))
+            current = owned_device(db, user["id"], device_id)
+            return {"device_id": device_id,
+                    "tracking_paused": bool(current["tracking_paused"]),
+                    "tracking_resumed_at": current["tracking_resumed_at"]}
 
     @app.post("/api/devices/{device_id}/rotate-token")
     def rotate_device_token(device_id: int, user=Depends(account)):

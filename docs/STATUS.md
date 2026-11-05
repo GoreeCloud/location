@@ -287,7 +287,9 @@ This is not full external-file interoperability, screen-reader acceptance, physi
 
 ## Development cycle 20 — browser session privacy isolation
 
-**Candidate fix awaiting GitHub CI (5 November 2026):**
+Verification: https://github.com/GoreeCloud/location/actions/runs/42119520716
+
+**Merged through PR #23, verified by passing 77 API tests and Chromium desktop/tablet/phone journeys on 5 November 2026:**
 
 - Clear in-tab GPS history, device/places/event arrays, selected device, map markers, coordinate labels, transient messages and private forms on sign-out.
 - Prevent a slow refresh or late 401 from an old session from overwriting or signing out a different account.
@@ -295,3 +297,15 @@ This is not full external-file interoperability, screen-reader acceptance, physi
 - No API, SQLite schema or real user location data is modified.
 
 **Limits:** Browser memory garbage collection, downloaded/exported files, screenshots, offline caches, server sessions and TLS acceptance require separate controls and review.
+
+## Development cycle 21 — owner-controlled device collection pause
+
+**Candidate under GitHub CI review (5 November 2026):**
+
+- Add persisted owner-scoped pause and resume timestamps to registered devices using an additive, serialized SQLite migration that preserves existing records and keys.
+- Add `PUT /api/devices/{id}/collection` with strict Boolean validation, transactional ownership checks and idempotent state changes.
+- Reject new owner, tracker-token, OwnTracks and CSV/GPX/GeoJSON device writes while paused. Resume rejects queued live fixes recorded before the server cutoff; deliberate owner archive imports remain possible after resume without retroactive alerts.
+- Reset live geofence baseline on resume. Add UI controls and disable browser GPS capture for paused devices.
+- Add API tests for account isolation, all ingestion routes, old timestamps, post-resume fences and existing-database migration, plus synthetic Chromium journeys at desktop/tablet/mobile widths.
+
+**Limits:** Client GPS hardware may continue local recording, timestamps are untrusted, no family/third-party consent workflow exists, and no production deployment is authorized.
