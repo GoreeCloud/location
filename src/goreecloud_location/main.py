@@ -484,6 +484,9 @@ def create_app(db_path: Path | None = None) -> FastAPI:
         pending.sort(key=lambda item: item[0])
         imported = duplicates = generated_events = 0
         with connect(path) as db:
+            # SQLite writer reservation must precede the latest-point read
+            # inside ingest(), including all rows in this CSV batch.
+            db.execute("BEGIN IMMEDIATE")
             owned_device(db, user["id"], device_id)
             for stamp, point in pending:
                 seen = db.execute(
@@ -503,6 +506,7 @@ def create_app(db_path: Path | None = None) -> FastAPI:
     @app.post("/api/locations", status_code=201)
     def create_point(body: UserPointIn, user=Depends(account)):
         with connect(path) as db:
+            db.execute("BEGIN IMMEDIATE")
             device = owned_device(db, user["id"], body.device_id)
             return ingest(db, device, body)
 
@@ -512,6 +516,7 @@ def create_app(db_path: Path | None = None) -> FastAPI:
         if not creds or creds.scheme.lower() != "bearer" or len(creds.credentials) > 256:
             api_error(401, "Device token required")
         with connect(path) as db:
+            db.execute("BEGIN IMMEDIATE")
             device = db.execute(
                 "SELECT * FROM devices WHERE id=? AND ingest_token_hash=?",
                 (device_id, token_digest(creds.credentials)),

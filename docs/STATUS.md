@@ -191,3 +191,13 @@ Retain explicit limits: this is an automated Chromium keyboard smoke check, not 
 Verification: [PR #15](https://github.com/GoreeCloud/location/pull/15) merged into `main` after [CI run 42102244038](https://github.com/GoreeCloud/location/actions/runs/42102244038) passed **35 API tests** (7 dependency/framework warnings), Python compilation and JavaScript syntax checks, and Playwright Chromium desktop/tablet/phone journeys. No real location data was changed.
 
 **Not verified:** concurrent-writer ordering, clock spoofing, native tracking hardware, emergency-response reliability, and any production deployment or acceptance.
+
+## Development cycle 13 — atomic GPS ingestion
+
+**Candidate fix under CI review (5 November 2026):**
+
+- Reserve SQLite's immediate writer lock before latest-location checks during account, device-token and CSV ingestion.
+- Update points, geofence state and related events together in one rollback-capable transaction.
+- Add a concurrent real-API regression test with mixed owner and device-token clients, asserting one arrival and one departure per chronological batch without lock errors.
+
+**Limits:** single SQLite database only, no distributed queue, load certification or production tracking acceptance. A simultaneous-uploads test is not proof of reliability under all levels of contention.

@@ -78,3 +78,7 @@ The authentication module uses a bounded, process-local sliding-window limiter w
 ## Manual retention workflow
 
 The owner-scoped API offers read-only counts before an explicitly confirmed UTC cutoff deletion. An immediate SQLite write transaction rechecks the counts to reject stale previews. Old GPS positions/events are removed and affected devices' geofence state is reset. The process is not scheduled and does not purge backed-up or exported copies. Fresh location points and device credentials remain.
+
+### SQLite ingestion ordering
+
+Account-authenticated GPS uploads, device-token ingestion, and bounded CSV batches now reserve a SQLite writer transaction with `BEGIN IMMEDIATE` **before** reading the current latest point or device token. The connection holds the write reservation while inserting points and deciding geofence transitions, then commits or rolls back as a unit. This serializes these ingestion paths when they share a single SQLite file (the process has a 15-second SQLite busy timeout) and reduces conflicting snapshots/duplicate transitions under concurrent uploads. It does not implement distributed coordination, guaranteed ingestion throughput, or resilience to malicious timestamps. Other operations such as key rotation and deletion still require independent concurrency review.
