@@ -86,3 +86,7 @@ Account-authenticated GPS uploads, device-token ingestion, and bounded CSV batch
 ## Same-origin map image loading
 
 The optional `GC_TILE_TEMPLATE` maps the browser's tile coordinates to paths on the application's own host. The API refuses externally resolvable URL values, including a slash-backslash prefix that browsers interpret as a protocol-relative host. The browser independently validates resolved tile origins and the server's Content Security Policy blocks third-party image hosts. No external map provider is required, and the self-hosted tile server is an optional, separate infrastructure component.
+
+## OwnTracks HTTP adapter (development)
+
+`POST /api/ingest/owntracks/{device_id}` accepts bounded JSON from compatible OwnTracks HTTP clients using Basic username `owntracks` and the existing registered device's one-time ingestion token as the password. The adapter validates a subset of OwnTracks numeric GPS metadata, converts Unix seconds to UTC and km/h to m/s, then writes through the same single-file SQLite transactional `ingest()` path as native device uploads. It does not store arbitrary OwnTracks topic, Wi-Fi, contact or networking attributes; MQTT, encrypted payloads and friend/command response messages are not implemented. Basic authentication requires independently secured TLS before remote use. See [OwnTracks HTTP](OWNTRACKS_HTTP.md).
