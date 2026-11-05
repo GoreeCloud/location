@@ -594,10 +594,13 @@ def create_app(db_path: Path | None = None) -> FastAPI:
         pending: list[tuple[str, PointIn]] = []
         for number, element in enumerate(trackpoints, start=1):
             try:
+                gpx_time = element.findtext(tag("time"))
+                if not gpx_time or "T" not in gpx_time:
+                    api_error(422, f"GPX track point {number} needs an ISO 8601 time")
                 values = {
                     "latitude": element.attrib["lat"],
                     "longitude": element.attrib["lon"],
-                    "recorded_at": element.findtext(tag("time")),
+                    "recorded_at": gpx_time,
                 }
                 elevation = element.findtext(tag("ele"))
                 if elevation is not None:
