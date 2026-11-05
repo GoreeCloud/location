@@ -216,3 +216,14 @@ Verification: [PR #16](https://github.com/GoreeCloud/location/pull/16) merged af
 Verification: [PR #17](https://github.com/GoreeCloud/location/pull/17) merged after [CI run 42105167224](https://github.com/GoreeCloud/location/actions/runs/42105167224) passed **46 automated API tests**, Python compilation, JavaScript syntax checks and three-viewport Chromium browser journeys, including hostile tile-configuration interception. All tests use synthetic data and a loopback-only server.
 
 **Limitations:** does not include a tile server, redirect-policy audit for a future reverse proxy, native client audit, or a production data privacy certification.
+
+## Development cycle 15 — account-wide session revocation
+
+**Candidate change under CI review (5 November 2026):**
+
+- Provide an authenticated `POST /api/auth/logout-all` endpoint for owner-scoped account session invalidation.
+- Add a confirmed account-wide Sign out action in Privacy & settings while retaining standard single-session logout.
+- Keep other accounts' sessions and independent device ingestion keys intact.
+- Add API tests for account separation, repeated revoked-token rejection, device-token scope and new login, plus a Chromium confirmation journey.
+
+**Limits:** no MFA/OIDC, trusted-device inventory, token replay detection, distributed session policy or account recovery. No real user sessions or production service changed.
