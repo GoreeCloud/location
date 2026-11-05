@@ -274,11 +274,13 @@ Verification: [PR #21](https://github.com/GoreeCloud/location/pull/21) merged af
 
 ## Development cycle 19 — unified History importer regression
 
-**Candidate browser test improvement awaiting GitHub CI (5 November 2026):**
+**Merged in `main`; GitHub API and Chromium CI passed 5 November 2026:**
 
 - Exercise synthetic CSV, GPX and GeoJSON imports through the one History file chooser on desktop, tablet and phone.
 - Assert each format increases the owner’s point count as expected.
 - Verify an unsupported file extension is rejected before any import HTTP request is sent.
 - Preserve synthetic-only location data, masked tracker tokens, and private loopback service boundaries.
+
+Verification: [PR #22](https://github.com/GoreeCloud/location/pull/22) merged after [GitHub CI run 42111807749](https://github.com/GoreeCloud/location/actions/runs/42111807749) passed **77 API tests**, Python compilation, JavaScript syntax, and Playwright desktop/tablet/phone journeys uploading CSV, GPX and GeoJSON. The browser also rejected a `.txt` file before any HTTP import request. All data was synthetic.
 
 This is not full external-file interoperability, screen-reader acceptance, physical-device testing or production deployment.
