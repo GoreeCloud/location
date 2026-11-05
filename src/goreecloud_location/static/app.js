@@ -318,6 +318,44 @@ function renderCaptureSelect() {
   select.disabled = false;
   $("capture-location").disabled = false;
 }
+async function loadHistoryPage(reset = false) {
+  if (!state.user || !state.token) return;
+  if (!reset && (state.historyLoading || !state.historyHasMore || !state.historyCursor)) return;
+  if (state.selectedHistoryDevice &&
+      !state.devices.some((d) => String(d.id) === state.selectedHistoryDevice))
+    state.selectedHistoryDevice = "";
+  const token = state.token, device = state.selectedHistoryDevice;
+  const sequence = ++state.historySequence;
+  const cursor = reset ? null : state.historyCursor;
+  if (reset) {
+    state.historyItems = [];
+    state.historyCursor = null;
+    state.historyHasMore = false;
+  }
+  state.historyLoading = true;
+  renderHistory();
+  try {
+    const query = new URLSearchParams({limit:"100"});
+    if (device) query.set("device_id", device);
+    if (cursor) query.set("cursor", cursor);
+    const data = await api("/api/locations/page?" + query.toString());
+    if (state.token !== token || !state.user ||
+        sequence !== state.historySequence ||
+        device !== state.selectedHistoryDevice) return;
+    if (!Array.isArray(data.items)) throw new Error("Invalid history page response");
+    state.historyItems = reset ? data.items : state.historyItems.concat(data.items);
+    state.historyCursor = data.next_cursor || null;
+    state.historyHasMore = Boolean(data.has_more);
+  } catch (error) {
+    if (state.token === token && sequence === state.historySequence)
+      showToast(error.message);
+  } finally {
+    if (state.token === token && sequence === state.historySequence) {
+      state.historyLoading = false;
+      renderHistory();
+    }
+  }
+}
 function renderHistory() {
   const select = $("history-device");
   const old = state.selectedHistoryDevice;
@@ -326,13 +364,20 @@ function renderHistory() {
   for (const d of state.devices) makeChoice(select, d.id, d.name);
   if (state.devices.some((d) => String(d.id) === old)) select.value = old;
   else state.selectedHistoryDevice = "";
-  const rows = state.points.filter((p) =>
-    !state.selectedHistoryDevice || String(p.device_id) === state.selectedHistoryDevice);
+  const rows = state.historyItems;
+  text("history-count", state.historyLoading && !rows.length
+    ? "Loading private location history…"
+    : "Showing " + rows.length + " position" + (rows.length === 1 ? "" : "s")
+      + (state.historyHasMore ? " · more available" : ""));
+  const more = $("history-more");
+  more.hidden = !state.historyHasMore;
+  more.disabled = state.historyLoading;
   const tbody = $("history-table");
   tbody.replaceChildren();
   if (!rows.length) {
     const tr = elt("tr");
-    const td = elt("td", "empty-small", "No matching location records.");
+    const td = elt("td", "empty-small",
+      state.historyLoading ? "Loading history…" : "No matching location records.");
     td.colSpan = 4; tr.append(td); tbody.append(tr); return;
   }
   for (const p of rows) {
