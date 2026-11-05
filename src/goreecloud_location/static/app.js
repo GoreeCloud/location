@@ -167,10 +167,10 @@ async function refresh() {
   renderRecent();
   renderDevices();
   renderPlaces();
-  renderHistory();
   renderEvents();
   renderCaptureSelect();
   renderMap();
+  await loadHistoryPage(true);
 }
 function renderRecent() {
   const list = $("recent-list");
@@ -656,8 +656,10 @@ function setupEvents() {
     } catch (error) { showToast(error.message); }
   });
   $("history-device").addEventListener("change", (event) => {
-    state.selectedHistoryDevice = event.target.value; renderHistory();
+    state.selectedHistoryDevice = event.target.value;
+    loadHistoryPage(true);
   });
+  $("history-more").addEventListener("click", () => loadHistoryPage(false));
   $("history-import").addEventListener("click", async () => {
     const selected = state.selectedHistoryDevice;
     const chooser = $("history-import-file");
