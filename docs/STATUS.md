@@ -284,3 +284,14 @@ Verification: [PR #21](https://github.com/GoreeCloud/location/pull/21) merged af
 Verification: [PR #22](https://github.com/GoreeCloud/location/pull/22) merged after [GitHub CI run 42111807749](https://github.com/GoreeCloud/location/actions/runs/42111807749) passed **77 API tests**, Python compilation, JavaScript syntax, and Playwright desktop/tablet/phone journeys uploading CSV, GPX and GeoJSON. The browser also rejected a `.txt` file before any HTTP import request. All data was synthetic.
 
 This is not full external-file interoperability, screen-reader acceptance, physical-device testing or production deployment.
+
+## Development cycle 20 — browser session privacy isolation
+
+**Candidate fix awaiting GitHub CI (5 November 2026):**
+
+- Clear in-tab GPS history, device/places/event arrays, selected device, map markers, coordinate labels, transient messages and private forms on sign-out.
+- Prevent a slow refresh or late 401 from an old session from overwriting or signing out a different account.
+- Add desktop/tablet/phone Chromium regression journeys that switch between two synthetic accounts in one tab and verify no previous user's location remains in DOM or application state.
+- No API, SQLite schema or real user location data is modified.
+
+**Limits:** Browser memory garbage collection, downloaded/exported files, screenshots, offline caches, server sessions and TLS acceptance require separate controls and review.
