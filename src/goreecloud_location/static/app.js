@@ -35,13 +35,16 @@ function showToast(message) {
   showToast.timer = setTimeout(() => { node.hidden = true; }, 4200);
 }
 async function api(path, options = {}) {
+  const requestToken = state.token;
   const headers = new Headers(options.headers || {});
   headers.set("Accept", "application/json");
   if (state.token) headers.set("Authorization", "Bearer " + state.token);
   if (options.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   const response = await fetch(path, { ...options, headers, cache: "no-store" });
   if (!response.ok) {
-    if (response.status === 401 && !path.startsWith("/api/auth/login")) signOutLocal();
+    // A delayed 401 for a previous session must not sign out a new user.
+    if (response.status === 401 && !path.startsWith("/api/auth/login")
+        && state.token === requestToken) signOutLocal();
     let message = "Request failed (" + response.status + ").";
     try {
       const data = await response.json();
@@ -103,10 +106,13 @@ function makeRow(title, subtitle, when, icon = "◎") {
 }
 
 async function refresh() {
+  const requestToken = state.token;
   const [summary, devices, points, places, events] = await Promise.all([
     api("/api/summary"), api("/api/devices"), api("/api/locations?limit=1000"),
     api("/api/places"), api("/api/events?limit=50")
   ]);
+  // Ignore any response started before sign-out or an account switch.
+  if (!state.user || !requestToken || state.token !== requestToken) return;
   state.devices = devices;
   state.points = points;
   state.places = places;
