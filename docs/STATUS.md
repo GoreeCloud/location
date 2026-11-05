@@ -203,3 +203,14 @@ Verification: [PR #15](https://github.com/GoreeCloud/location/pull/15) merged in
 Verification: [PR #16](https://github.com/GoreeCloud/location/pull/16) merged after [CI run 42103124834](https://github.com/GoreeCloud/location/actions/runs/42103124834) passed **36 automated API tests** (7 dependency/framework warnings), Python compilation, JavaScript syntax and three-viewport Chromium browser journeys. The concurrency test used synthetic credentials and GPS coordinates; no real location data or running service was modified.
 
 **Limits:** single SQLite database only, no distributed queue, load certification or production tracking acceptance. A simultaneous-uploads test is not proof of reliability under all levels of contention.
+
+## Development cycle 14 — same-origin map tile privacy
+
+**Candidate patch under GitHub CI review (5 November 2026):**
+
+- Reject external host, protocol-relative, slash-backslash and control-character map tile templates in the public configuration endpoint.
+- Verify each resolved browser tile URL is same-origin before creating an image request.
+- Tighten Content Security Policy image origins to self and data only.
+- Include API regressions for safe/unsafe templates and a hostile browser configuration interception with third-party request detection.
+
+**Limitations:** does not include a tile server, redirect-policy audit for a future reverse proxy, native client audit, or a production data privacy certification.

@@ -82,3 +82,7 @@ The owner-scoped API offers read-only counts before an explicitly confirmed UTC 
 ### SQLite ingestion ordering
 
 Account-authenticated GPS uploads, device-token ingestion, and bounded CSV batches now reserve a SQLite writer transaction with `BEGIN IMMEDIATE` **before** reading the current latest point or device token. The connection holds the write reservation while inserting points and deciding geofence transitions, then commits or rolls back as a unit. This serializes these ingestion paths when they share a single SQLite file (the process has a 15-second SQLite busy timeout) and reduces conflicting snapshots/duplicate transitions under concurrent uploads. It does not implement distributed coordination, guaranteed ingestion throughput, or resilience to malicious timestamps. Other operations such as key rotation and deletion still require independent concurrency review.
+
+## Same-origin map image loading
+
+The optional `GC_TILE_TEMPLATE` maps the browser's tile coordinates to paths on the application's own host. The API refuses externally resolvable URL values, including a slash-backslash prefix that browsers interpret as a protocol-relative host. The browser independently validates resolved tile origins and the server's Content Security Policy blocks third-party image hosts. No external map provider is required, and the self-hosted tile server is an optional, separate infrastructure component.
