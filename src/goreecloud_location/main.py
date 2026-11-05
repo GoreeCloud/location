@@ -186,6 +186,11 @@ def create_app(db_path: Path | None = None) -> FastAPI:
              point.battery_percent, stamp, utc_now()),
         )
         alerts = []
+        # Explicit historical backfill from before resumption may be stored,
+        # but must not generate fresh arrival/departure notifications.
+        if (historical_import and device["tracking_resumed_at"]
+                and stamp <= device["tracking_resumed_at"]):
+            return {"id": cur.lastrowid, "recorded_at": stamp, "events": alerts}
         # Only strictly newer observations can update current geofence state.
         # A conflicting position at the exact same recorded millisecond is
         # historical/ambiguous; allowing it to flip state can invent a false
