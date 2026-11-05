@@ -140,8 +140,8 @@ async function run(){
    await page.locator("#history-import-file").setInputFiles({
      name:"synthetic-history.csv",mimeType:"text/csv",
      buffer:Buffer.from(
-       "latitude,longitude,recorded_at\\n"
-       +"35.7,-83.7,2026-10-01T11:02:00Z\\n"
+       "latitude,longitude,recorded_at\n"
+       +"35.7,-83.7,2026-10-01T11:02:00Z\n"
      )
    });
    await page.locator("#history-import").click();
