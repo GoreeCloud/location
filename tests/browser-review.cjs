@@ -189,10 +189,10 @@ async function run(){
    await page.screenshot({path:path.join(evidence,v.name+"-history.png"),fullPage:true});
 
    // The UI must reach beyond its initial 100 owner-scoped records.
-   const extraCsv = "latitude,longitude,recorded_at\\n"
+   const extraCsv = "latitude,longitude,recorded_at\n"
      + Array.from({length:105},(_,i)=>
        (35.1 + i*0.0001).toFixed(6) + ",-83.45,"
-       + new Date(Date.UTC(2026,9,2,12,0,i)).toISOString()).join("\\n") + "\\n";
+       + new Date(Date.UTC(2026,9,2,12,0,i)).toISOString()).join("\n") + "\n";
    await page.locator("#history-import-file").setInputFiles({
      name:"synthetic-bulk-history.csv",mimeType:"text/csv",
      buffer:Buffer.from(extraCsv)
