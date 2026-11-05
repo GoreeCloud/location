@@ -99,7 +99,15 @@ function signOutLocal() {
   renderHistory();
   renderEvents();
   renderCaptureSelect();
-  renderMap();
+  // Hidden maps cannot be rerendered (zero dimensions); explicitly scrub
+  // coordinates, SVG paths/pins, tile images and last-user metric values.
+  $("map-paths").replaceChildren();
+  $("map-markers").replaceChildren();
+  $("tile-layer").replaceChildren();
+  $("map-empty").hidden = false;
+  text("map-count", "No positions yet");
+  text("map-coordinates", "Waiting for location");
+  for (const name of ["points","devices","places","events"]) text("metric-" + name, "0");
 }
 function selectView(view) {
   if (!headings[view]) return;
