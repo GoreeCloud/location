@@ -271,3 +271,14 @@ Verification: [PR #20](https://github.com/GoreeCloud/location/pull/20) merged af
 Verification: [PR #21](https://github.com/GoreeCloud/location/pull/21) merged after [CI run 42111279069](https://github.com/GoreeCloud/location/actions/runs/42111279069) passed **77 automated API tests** (7 framework/dependency warnings), Python compilation, JavaScript syntax and desktop/tablet/phone Chromium browser journeys exercising both GPX and GeoJSON imports using the unified History control. Tests used synthetic data only.
 
 **Remaining gates:** Real external GeoJSON archive interoperability, independent hostile-input fuzzing, accessibility/visual review of the unified controls, and production security acceptance.
+
+## Development cycle 19 — unified History importer regression
+
+**Candidate browser test improvement awaiting GitHub CI (5 November 2026):**
+
+- Exercise synthetic CSV, GPX and GeoJSON imports through the one History file chooser on desktop, tablet and phone.
+- Assert each format increases the owner’s point count as expected.
+- Verify an unsupported file extension is rejected before any import HTTP request is sent.
+- Preserve synthetic-only location data, masked tracker tokens, and private loopback service boundaries.
+
+This is not full external-file interoperability, screen-reader acceptance, physical-device testing or production deployment.

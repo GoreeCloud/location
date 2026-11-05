@@ -24,3 +24,7 @@ The browser acceptance runner checks that Settings navigation can be activated w
 - Verify actual browser accessibility with keyboard-only operation and screen-reader audits.
 - Add Safari/WebKit and Firefox testing, browser permissions rejection, performance budgets, reduced-motion, high-contrast, and touch target assessment.
 - Test on physical Android/iOS hardware and Linux desktop separately. A browser UI does not satisfy mandatory native application delivery requirements.
+
+## Three-format History import regression
+
+The unified History file chooser is exercised with **synthetic CSV, GPX and GeoJSON** uploads at desktop (1440×900), tablet (820×1180) and phone (390×844). Each successful import must increase that account’s point count by exactly one; selecting an unsupported `.txt` extension must display an error and result in **zero** HTTP import calls. This is a browser/UI regression gate, not a proof of real-world archive compatibility, production accessibility, or import throughput.

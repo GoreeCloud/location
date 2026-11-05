@@ -137,6 +137,29 @@ async function run(){
    await page.waitForFunction(previous=>
      Number(document.querySelector("#metric-points").textContent.replaceAll(",",""))===previous+2,
      pointsBeforeImport,{timeout:10000});
+   await page.locator("#history-import-file").setInputFiles({
+     name:"synthetic-history.csv",mimeType:"text/csv",
+     buffer:Buffer.from(
+       "latitude,longitude,recorded_at\n"
+       +"35.7,-83.7,2026-10-01T11:02:00Z\n"
+     )
+   });
+   await page.locator("#history-import").click();
+   await page.waitForFunction(previous=>
+     Number(document.querySelector("#metric-points").textContent.replaceAll(",",""))===previous+3,
+     pointsBeforeImport,{timeout:10000});
+
+   let unexpectedImportRequests=0;
+   page.on("request",req=>{
+     if(req.method()==="POST" && req.url().includes("/import/")) unexpectedImportRequests++;
+   });
+   await page.locator("#history-import-file").setInputFiles({
+     name:"not-a-track.txt",mimeType:"text/plain",
+     buffer:Buffer.from("not a permitted location import format")
+   });
+   await page.locator("#history-import").click();
+   await page.getByText("Choose a .csv, .gpx or .geojson file.").waitFor({state:"visible"});
+   assert.equal(unexpectedImportRequests,0,"Unsupported file must not generate an HTTP import");
    await page.screenshot({path:path.join(evidence,v.name+"-history.png"),fullPage:true});
    const geometry=await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
    assert.ok(geometry.width<=geometry.viewport+2,"Horizontal overflow "+v.name+" "+JSON.stringify(geometry));
