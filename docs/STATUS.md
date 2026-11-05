@@ -246,7 +246,7 @@ Verification: [PR #19](https://github.com/GoreeCloud/location/pull/19) merged af
 
 ## Development cycle 17 — privacy-first GPX history import
 
-**Implemented in a review branch, GitHub CI and production acceptance pending (5 November 2026):**
+**Merged in `main`; synthetic API and Chromium CI passed 5 November 2026; production acceptance remains open:**
 
 - Import owner-selected GPX 1.0 and 1.1 track point history with strict timestamp validation, optional elevation and chronological ordering.
 - Use `defusedxml` to block DTD, entities and external references; limit requests to 2 MiB and 5,000 points; reject malformed files before writing.
@@ -254,4 +254,6 @@ Verification: [PR #19](https://github.com/GoreeCloud/location/pull/19) merged af
 - Add browser History GPX file input and desktop/tablet/phone synthetic interaction testing, plus API regressions for round-trip compatibility, isolation, limits, unsafe XML and atomicity.
 - Document supported GPX scope and operator precautions in [GPX import](GPX_IMPORT.md).
 
-**Remaining gates:** GitHub Actions, independent hostile XML and large-file tests, real-world archive compatibility, production TLS and external security review. This is not a general-purpose import service.
+Verification: [PR #20](https://github.com/GoreeCloud/location/pull/20) merged after [CI run 42110306429](https://github.com/GoreeCloud/location/actions/runs/42110306429) passed **71 automated API tests** (7 dependency/framework warnings), Python compilation, JavaScript syntax and desktop/tablet/phone Chromium browser journeys with synthetic GPX uploads. The first review run identified a mistaken expectation of an arrival event for GPX points without accuracy; the test was corrected to enforce the existing privacy/safety behavior. No real GPS records were used.
+
+**Remaining gates:** Independent hostile XML and large-file tests, real-world archive compatibility, production TLS and external security review. This is not a general-purpose import service.
