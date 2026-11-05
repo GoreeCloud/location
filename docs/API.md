@@ -22,6 +22,7 @@ All routes below use JSON unless otherwise noted. There are **no public location
 | POST | `/api/devices/{id}/import/csv` | Owner session | Raw UTF-8 CSV import, max 2 MiB / 5,000 data rows, atomic validation |
 | DELETE | `/api/locations/{id}` | Owner session | Delete point and matching timestamp events; reset fence state |
 | POST | `/api/ingest/{device_id}` | Device token | Upload point only, never read |
+| POST | `/api/ingest/owntracks/{device_id}` | HTTP Basic device key | OwnTracks JSON location ingestion; always returns `[]` on 200; never reads history |
 | GET | `/api/places` | User session | Owner circular geofences |
 | POST | `/api/places` | User session | Create circular geofence |
 | DELETE | `/api/places/{id}` | Owner session | Delete geofence and its events |
@@ -64,6 +65,10 @@ curl -X POST http://127.0.0.1:8123/api/ingest/1 \
 ```
 
 `recorded_at` is an optional ISO 8601 timestamp **with timezone offset**; future timestamps beyond five minutes are rejected. Accepted fields include latitude (-90..90), longitude (-180..180), accuracy_m (0..10000), altitude_m, speed_mps, heading_deg, and battery_percent (0..100). Unknown fields are rejected.
+
+## OwnTracks HTTP location clients
+
+Configure the OwnTracks app in HTTP mode with URL `https://PRIVATE-HOST/api/ingest/owntracks/DEVICE_ID`, Basic username `owntracks`, and Basic password equal to that registered device's private ingestion token. Native location JSON uses `_type=location`, `lat`, `lon` and integer epoch `tst`; optional fields `acc`, `alt`, `vel` (km/h), `cog`, `batt` are mapped and validated. The response on success is JSON `[]`. Other recognized non-location messages are acknowledged without persisting or applying their untrusted transitions. Payloads are limited to 16 KiB, and encrypted messages and MQTT are not supported. [Detailed setup](OWNTRACKS_HTTP.md).
 
 ## Create a place
 
