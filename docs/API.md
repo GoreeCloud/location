@@ -21,6 +21,7 @@ All routes below use JSON unless otherwise noted. There are **no public location
 | POST | `/api/locations` | User session | Record point for owner device |
 | POST | `/api/devices/{id}/import/csv` | Owner session | Raw UTF-8 CSV import, max 2 MiB / 5,000 data rows, atomic validation |
 | POST | `/api/devices/{id}/import/gpx` | Owner session | Defused GPX 1.0/1.1 timestamped track import, max 2 MiB / 5,000 points |
+| POST | `/api/devices/{id}/import/geojson` | Owner session | Bounded owner-only GeoJSON FeatureCollection Point import, max 2 MiB / 5,000 features |
 | DELETE | `/api/locations/{id}` | Owner session | Delete point and matching timestamp events; reset fence state |
 | POST | `/api/ingest/{device_id}` | Device token | Upload point only, never read |
 | POST | `/api/ingest/owntracks/{device_id}` | HTTP Basic device key | OwnTracks JSON location ingestion; always returns `[]` on 200; never reads history |
@@ -91,7 +92,7 @@ Send raw UTF-8 bytes with Content-Type: text/csv and a valid owner session to PO
 
 A successful response provides imported, skipped_duplicates and geofence_events counts. The operation first validates the entire file (maximum 2 MiB, 5,000 records) then writes within one transaction; a malformed file does not partially import. Rows are sorted by timestamp before processing. Duplicate device/timestamp/latitude/longitude combinations are skipped as a best-effort deduplication strategy; concurrent ingestion and large migrations require additional controls.
 
-CSV and GPX imports are both available as bounded, account-scoped development utilities. Google Takeout, FIT/TCX/KML, other provider-specific archives, and large resumable imports are not implemented. See [GPX import](GPX_IMPORT.md).
+CSV, GPX and GeoJSON Point imports are available as bounded, account-scoped development utilities. Google Takeout, FIT/TCX/KML, other provider-specific archives, and large resumable imports are not implemented. See [GPX import](GPX_IMPORT.md).
 
 
 ## Manual history retention preview and purge
@@ -118,3 +119,7 @@ Send an authenticated POST to `/api/auth/logout-all` to revoke all currently exi
 ## GPX track import
 
 POST `/api/devices/{id}/import/gpx` with an account bearer token and raw GPX XML (`Content-Type: application/gpx+xml`), not a multipart file. The importer accepts GPX 1.0/1.1 track points with explicit timezone-aware timestamps and optional elevation, rejects unsafe XML through `defusedxml`, bounds body size to 2 MiB and track count to 5,000, validates all points before writing, and shares the CSV import's duplicate/transaction logic. Returns 201 plus `imported`, `skipped_duplicates`, and `geofence_events`. Waypoints, routes, extensions, contacts and user-defined geofence events are never imported. [Setup and boundaries](GPX_IMPORT.md).
+
+## GeoJSON Point history import
+
+POST `/api/devices/{id}/import/geojson` with the account bearer session and raw GeoJSON (`Content-Type: application/geo+json`). Accepts RFC 7946 `FeatureCollection` containing timestamped `Point` features with longitude/latitude coordinates, optional altitude and only supported GPS properties. Rejects malformed/non-finite JSON, unsupported geometries, absent timezone-aware timestamps and oversized files before writing. Limits: 2 MiB and 5,000 features, shared duplicate/transaction semantics with CSV and GPX. Additional features/metadata are ignored, never used for account sharing or saved places. [Configuration and limitations](GEOJSON_IMPORT.md).
