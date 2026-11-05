@@ -612,6 +612,78 @@ def create_app(db_path: Path | None = None) -> FastAPI:
             pending.append((stamp, point))
         return import_validated_batch(user["id"], device_id, pending)
 
+    @app.post("/api/devices/{device_id}/import/geojson", status_code=201)
+    async def import_geojson(device_id: int, request: Request, user=Depends(account)):
+        """Import a bounded GeoJSON Point FeatureCollection into one owner device.
+
+        Only positions and explicitly supported telemetry are persisted.
+        Feature names, foreign metadata, URLs, identities and properties
+        are never stored or interpreted as user-created places.
+        """
+        media_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+        if media_type not in {"application/geo+json", "application/json"}:
+            api_error(415, "GeoJSON requires application/geo+json or application/json")
+        with connect(path) as db:
+            owned_device(db, user["id"], device_id)
+
+        payload = bytearray()
+        async for chunk in request.stream():
+            if len(payload) + len(chunk) > 2_097_152:
+                api_error(413, "GeoJSON is limited to 2 MiB")
+            payload.extend(chunk)
+        try:
+            source = json.loads(
+                bytes(payload).decode("utf-8"),
+                parse_constant=lambda _: (_ for _ in ()).throw(ValueError("Non-finite JSON")),
+            )
+        except (UnicodeDecodeError, ValueError, RecursionError):
+            api_error(422, "Malformed GeoJSON document")
+        if not isinstance(source, dict) or source.get("type") != "FeatureCollection":
+            api_error(422, "Expected a GeoJSON FeatureCollection")
+        features = source.get("features")
+        if not isinstance(features, list):
+            api_error(422, "GeoJSON features must be a list")
+        if len(features) > 5000:
+            api_error(413, "GeoJSON is limited to 5,000 features")
+        if not features:
+            api_error(422, "GeoJSON contains no features")
+
+        pending: list[tuple[str, PointIn]] = []
+        for number, feature in enumerate(features, start=1):
+            if not isinstance(feature, dict) or feature.get("type") != "Feature":
+                api_error(422, f"GeoJSON feature {number} is not a Feature")
+            geom, props = feature.get("geometry"), feature.get("properties")
+            if not isinstance(geom, dict) or geom.get("type") != "Point":
+                api_error(422, f"GeoJSON feature {number} is not a Point")
+            if not isinstance(props, dict):
+                api_error(422, f"GeoJSON feature {number} needs properties")
+            coordinates = geom.get("coordinates")
+            if (not isinstance(coordinates, list) or len(coordinates) not in (2, 3)
+                    or any(type(item) not in (int, float) for item in coordinates)):
+                api_error(422, f"GeoJSON feature {number} has invalid coordinates")
+            recorded_at = props.get("recorded_at")
+            if not isinstance(recorded_at, str) or "T" not in recorded_at:
+                api_error(422, f"GeoJSON feature {number} needs an ISO 8601 timestamp")
+            values = {
+                "latitude": coordinates[1], "longitude": coordinates[0],
+                "recorded_at": recorded_at,
+            }
+            for key in ("accuracy_m", "altitude_m", "speed_mps",
+                        "heading_deg", "battery_percent"):
+                if key in props and props[key] is not None:
+                    values[key] = props[key]
+            # GeoJSON Point's third coordinate may supply an elevation in
+            # meters when explicit altitude_m is not provided.
+            if len(coordinates) == 3 and "altitude_m" not in values:
+                values["altitude_m"] = coordinates[2]
+            try:
+                point = PointIn.model_validate(values)
+                stamp = timestamp_for(point.recorded_at)
+            except ValidationError:
+                api_error(422, f"GeoJSON feature {number} has invalid GPS metadata")
+            pending.append((stamp, point))
+        return import_validated_batch(user["id"], device_id, pending)
+
     @app.post("/api/locations", status_code=201)
     def create_point(body: UserPointIn, user=Depends(account)):
         with connect(path) as db:

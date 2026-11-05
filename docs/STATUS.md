@@ -257,3 +257,15 @@ Verification: [PR #19](https://github.com/GoreeCloud/location/pull/19) merged af
 Verification: [PR #20](https://github.com/GoreeCloud/location/pull/20) merged after [CI run 42110306429](https://github.com/GoreeCloud/location/actions/runs/42110306429) passed **71 automated API tests** (7 dependency/framework warnings), Python compilation, JavaScript syntax and desktop/tablet/phone Chromium browser journeys with synthetic GPX uploads. The first review run identified a mistaken expectation of an arrival event for GPX points without accuracy; the test was corrected to enforce the existing privacy/safety behavior. No real GPS records were used.
 
 **Remaining gates:** Independent hostile XML and large-file tests, real-world archive compatibility, production TLS and external security review. This is not a general-purpose import service.
+
+## Development cycle 18 — GeoJSON import and unified History upload
+
+**Implemented in a review branch; GitHub CI and production acceptance pending (5 November 2026):**
+
+- Import owner-scoped GeoJSON RFC 7946 `FeatureCollection` data containing timestamped `Point` features, with optional GPS metadata and third-coordinate altitude.
+- Validate longitude/latitude, timezone-aware times, numerical fields, feature structure, 2 MiB body limit and 5,000-record cap before using the shared atomic CSV/GPX transaction.
+- Keep foreign identity/URLs/metadata, non-Point geometries and missing time information out of the stored history.
+- Consolidate CSV, GPX and GeoJSON History file upload into one accessible file chooser and document format selection.
+- Add synthetic API regressions for export/import round trips, account isolation, invalid data, idempotency and malformed uploads, plus three-viewport browser journeys.
+
+**Gates:** GitHub CI, real external GeoJSON archive interoperability, independent hostile-input fuzzing and production security review.
