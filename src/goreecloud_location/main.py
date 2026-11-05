@@ -496,6 +496,8 @@ def create_app(db_path: Path | None = None) -> FastAPI:
                            WHERE id=? AND account_id=?""",
                         (utc_now(), device_id, user["id"]),
                     )
+                    # No transition can be inferred across a paused interval.
+                    db.execute("DELETE FROM geofence_state WHERE device_id=?", (device_id,))
             current = owned_device(db, user["id"], device_id)
             return {"device_id": device_id,
                     "tracking_paused": bool(current["tracking_paused"]),
