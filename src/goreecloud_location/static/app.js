@@ -256,14 +256,16 @@ function renderCaptureSelect() {
   const select = $("capture-device");
   const old = select.value;
   select.replaceChildren();
-  if (!state.devices.length) {
-    makeChoice(select, "", "Add a device first");
+  const active = state.devices.filter((d) => !d.tracking_paused);
+  if (!active.length) {
+    makeChoice(select, "", state.devices.length
+      ? "All devices paused · resume in Devices" : "Add a device first");
     select.disabled = true;
     $("capture-location").disabled = true;
     return;
   }
-  for (const d of state.devices) makeChoice(select, d.id, d.name);
-  if (state.devices.some((d) => String(d.id) === old)) select.value = old;
+  for (const d of active) makeChoice(select, d.id, d.name);
+  if (active.some((d) => String(d.id) === old)) select.value = old;
   select.disabled = false;
   $("capture-location").disabled = false;
 }
