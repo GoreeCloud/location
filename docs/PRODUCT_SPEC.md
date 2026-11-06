@@ -38,7 +38,9 @@ The full scope below is categorized from the founder's 22-section product brief.
 
 ## 5. Family circles and shared location
 
-**[Planned]** Private circles for family/friends/households/organizations, multiple circles, invitation/accept/decline, group administrators and roles, permission-isolated family map, member avatars/battery/location cards, group check-ins, consented location requests, trusted contacts, individualized live/history sharing, group trips/driving reports, arrivals/departures, member removal and access revocation, separate personal and shared records.
+**[Implemented — membership foundation, no sharing]** Private named circles, recipient-generated one-time invitation codes, pending invitations with expiry, accept/decline, owner/member roles, owner revocation and member exit. Membership does not grant any position, history, device or export permissions. See [CIRCLES.md](CIRCLES.md).
+
+**[Planned]** Permission-isolated family maps, verified live/history sharing grants, separate permission expiries and immediate revocation, group administrators and invitations beyond the first owner/member roles, member avatars/battery/location cards, check-ins, trusted contacts, alerts, trips, driving reports, and shared records. No location disclosure is active.
 
 **Safety gate:** No cross-account location access without explicit consent, auditable grants, and tested revocation.
 
