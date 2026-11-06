@@ -6,6 +6,8 @@ const $ = (id) => document.getElementById(id);
 const state = {
   token: sessionStorage.getItem("gc-location-session") || "",
   user: null, devices: [], points: [], places: [], events: [], collectionActivity: [],
+  circles: [], circleInvitations: [], circleMembers: [], selectedCircleId: null,
+  circleSequence: 0,
   retentionPreview: null,
   selectedHistoryDevice: "", zoomAdjust: 0, tileTemplate: "",
   historyItems: [], historyCursor: null, historyHasMore: false,
@@ -16,6 +18,7 @@ const headings = {
   history: ["Your location history.", "HISTORY"],
   places: ["Places & geofences.", "PLACES"],
   devices: ["Your tracking devices.", "DEVICES"],
+  circles: ["People you choose.", "CIRCLES"],
   settings: ["Privacy comes first.", "SETTINGS"]
 };
 
@@ -72,6 +75,11 @@ function signOutLocal() {
   state.places = [];
   state.events = [];
   state.collectionActivity = [];
+  state.circles = [];
+  state.circleInvitations = [];
+  state.circleMembers = [];
+  state.selectedCircleId = null;
+  state.circleSequence++;
   state.selectedHistoryDevice = "";
   state.historyItems = [];
   state.historyCursor = null;
@@ -90,10 +98,13 @@ function signOutLocal() {
   text("retention-summary", "No preview yet.");
   $("device-form").reset();
   $("place-form").reset();
+  $("circle-form").reset();
+  $("circle-invite-form").reset();
   $("history-import-file").value = "";
   if ($("secret-dialog").open) $("secret-dialog").close();
   if ($("erase-dialog").open) $("erase-dialog").close();
   text("device-secret", "");
+  text("copy-secret", "Copy token");
   text("user-label", "");
   text("user-avatar", "");
   clearTimeout(showToast.timer);
@@ -107,6 +118,9 @@ function signOutLocal() {
   renderHistory();
   renderEvents();
   renderCollectionActivity();
+  renderCircles();
+  renderCircleInvitations();
+  renderCircleMembers();
   renderCaptureSelect();
   // Hidden maps cannot be rerendered (zero dimensions); explicitly scrub
   // coordinates, SVG paths/pins, tile images and last-user metric values.
@@ -152,10 +166,11 @@ function makeRow(title, subtitle, when, icon = "◎") {
 
 async function refresh() {
   const requestToken = state.token;
-  const [summary, devices, points, places, events, activity] = await Promise.all([
+  const [summary, devices, points, places, events, activity, circles, invitations] = await Promise.all([
     api("/api/summary"), api("/api/devices"), api("/api/locations?limit=1000"),
     api("/api/places"), api("/api/events?limit=50"),
-    api("/api/privacy/collection-activity?limit=50")
+    api("/api/privacy/collection-activity?limit=50"),
+    api("/api/circles"), api("/api/circle-invitations")
   ]);
   // Ignore any response started before sign-out or an account switch.
   if (!state.user || !requestToken || state.token !== requestToken) return;
@@ -164,6 +179,14 @@ async function refresh() {
   state.places = places;
   state.events = events;
   state.collectionActivity = activity;
+  state.circles = circles;
+  state.circleInvitations = invitations;
+  if (state.selectedCircleId !== null &&
+      !circles.some(c => c.id === state.selectedCircleId)) {
+    state.selectedCircleId = null;
+    state.circleMembers = [];
+    state.circleSequence++;
+  }
   text("metric-points", Number(summary.points).toLocaleString());
   text("metric-devices", Number(summary.devices).toLocaleString());
   text("metric-places", Number(summary.places).toLocaleString());
@@ -173,6 +196,9 @@ async function refresh() {
   renderPlaces();
   renderEvents();
   renderCollectionActivity();
+  renderCircles();
+  renderCircleInvitations();
+  renderCircleMembers();
   renderCaptureSelect();
   renderMap();
   await loadHistoryPage(true);
