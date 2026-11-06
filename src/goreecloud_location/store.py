@@ -126,7 +126,7 @@ def initialize(path: Path) -> None:
         # access. Share codes are random, one-time and hashed at rest.
         db.executescript("""
             CREATE TABLE IF NOT EXISTS circles (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 owner_account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
                 name TEXT NOT NULL,
                 created_at TEXT NOT NULL
@@ -140,7 +140,7 @@ def initialize(path: Path) -> None:
             CREATE INDEX IF NOT EXISTS idx_circle_code_expiry
                 ON circle_invite_codes(expires_at);
             CREATE TABLE IF NOT EXISTS circle_memberships (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 circle_id INTEGER NOT NULL REFERENCES circles(id) ON DELETE CASCADE,
                 account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
                 status TEXT NOT NULL CHECK(status IN ('pending','accepted','declined')),
