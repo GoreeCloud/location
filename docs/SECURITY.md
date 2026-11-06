@@ -134,3 +134,7 @@ The new invite-only membership foundation has no public account directory. A pro
 ## Circle UI does not bypass consent or sharing boundaries
 
 The dedicated Circles screen is account-authenticated and does not render other members' GPS, devices, history, exports, or geofence events. One-time invite codes appear in a transient secret dialog, are never stored in browser persistence by this UI, and are cleared when the dialog closes or the user signs out. Explicit confirmation precedes accepting, leaving, removing members and deleting a circle. The page uses the same no-external-requests/CSP restrictions as the private location dashboard. All membership and expiry decisions are enforced again by the server; frontend controls do not authorize location sharing. Account switches discard in-memory circle lists and member rosters; offline browser caches/screenshots and user-copied codes require separate protections.
+
+## Unused invite-code revocation
+
+An account owner can invalidate their current unused recipient-generated circle invite code through an authenticated, serialized `DELETE /api/circle-invite-code` request. Revocation cannot affect another account's code, does not disclose whether a code existed, and cannot be performed with a write-only GPS tracker token. A revoked code cannot issue future invitations, but already-created pending invitations or accepted memberships require separate decline/leave actions. The UI requires confirmation. Clipboard copies, screenshots and external messages are outside the server's ability to erase.
