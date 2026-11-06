@@ -244,6 +244,19 @@ async function run(){
    assert.ok((await page.locator("#device-secret").textContent()).length>32);
    await page.locator("#close-secret").click();
    assert.equal(await page.locator("#device-secret").textContent(),"");
+   let codeRevokeRequests=0;
+   page.on("request",request=>{
+     if(request.method()==="DELETE" && request.url().endsWith("/api/circle-invite-code"))
+       codeRevokeRequests++;
+   });
+   page.once("dialog",dialog=>dialog.dismiss());
+   await page.locator("#circle-code-revoke").click();
+   assert.equal(codeRevokeRequests,0,"Cancelling must not revoke a code");
+   page.once("dialog",dialog=>dialog.accept());
+   await page.locator("#circle-code-revoke").click();
+   await page.getByText("Unused invitation code revoked. Existing invitations are unchanged.")
+     .waitFor({state:"visible"});
+   assert.equal(codeRevokeRequests,1);
    const circleName="Synthetic "+v.name+" family";
    await page.locator("#circle-name").fill(circleName);
    await page.locator("#circle-form button[type=submit]").click();
@@ -252,9 +265,9 @@ async function run(){
    await page.locator("#circle-invite-code").fill(inviteCode);
    await page.locator("#circle-invite-form button[type=submit]").click();
    await page.getByRole("button",{name:"View members of "+circleName}).click();
-   await page.locator("#circle-members-list").getByText("pending",{exact:true})
+   await page.locator("#circle-members-list").getByText(secondUser,{exact:true})
      .waitFor({state:"visible"});
-   assert.match(await page.locator("#circle-members-list").innerText(),new RegExp(secondUser));
+   assert.match(await page.locator("#circle-members-list").innerText(),/pending/);
    await page.screenshot({path:path.join(evidence,v.name+"-circles.png"),fullPage:true});
    const geometry=await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
    assert.ok(geometry.width<=geometry.viewport+2,"Horizontal overflow "+v.name+" "+JSON.stringify(geometry));
@@ -332,6 +345,12 @@ async function run(){
    assert.equal(await page.locator("#metric-devices").textContent(),"0");
    await page.getByRole("button",{name:"View members of "+circleName}).click();
    await page.locator("#circle-members-list").getByText(secondUser).waitFor({state:"visible"});
+   page.once("dialog",dialog=>dialog.accept());
+   await page.locator("#circle-code-revoke").click();
+   await page.getByText("Unused invitation code revoked. Existing invitations are unchanged.")
+     .waitFor({state:"visible"});
+   assert.equal(await page.locator("#circles-list").getByText(circleName).count(),1,
+     "Revoking a code must not remove accepted membership");
    page.once("dialog",dialog=>dialog.accept());
    await page.getByRole("button",{name:"Leave circle "+circleName}).click();
    await page.locator("#circles-list").getByText("No circles yet. Create one or accept an invitation.")

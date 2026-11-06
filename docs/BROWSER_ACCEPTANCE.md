@@ -48,3 +48,7 @@ At each desktop/tablet/phone Chromium viewport, the journey pauses and resumes a
 ## Circles invitation and browser privacy acceptance
 
 Synthetic desktop, tablet and phone journeys verify the Circles screen's privacy warning, owner circle creation, one-time invite-code dialog cleanup, recipient-generated code submission, visibility of pending membership, and no sharing before explicit acceptance. After logging out of the owner account and into a separate recipient account in the same tab, tests require that only the addressed recipient sees the pending invitation; accepting creates metadata-only membership, with the recipient's GPS/device metrics still zero. The recipient can leave after confirmation. Old account circle lists, invitations and member rosters must be cleared on sign-out. The tests use entirely synthetic usernames and positions with loopback HTTP and no third-party requests.
+
+## Invite-code revocation browser check
+
+Desktop/tablet/phone Chromium journeys explicitly cancel a code-revocation confirmation and verify no HTTP DELETE is sent, then confirm and verify exactly one account-authenticated revocation request. The separate recipient's one-time code remains usable for a pending invitation. Once a recipient accepts membership, revoking its own unused code must not remove that membership; leaving is an independent confirmed action. No GPS sharing is introduced.

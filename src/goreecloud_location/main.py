@@ -440,6 +440,22 @@ def create_app(db_path: Path | None = None) -> FastAPI:
         return {"invite_code": code, "expires_at": expires,
                 "warning": "Share only with someone you want to invite you to a circle. The code works once and does not share GPS."}
 
+    @app.delete("/api/circle-invite-code", status_code=204)
+    def revoke_circle_invite_code(user=Depends(account)):
+        """Immediately revoke this account's unused, one-time invite code.
+
+        No active memberships or already-created invitations are affected.
+        Returns 204 even when the code is absent, consumed, or expired,
+        avoiding account state disclosure from a revocation attempt.
+        """
+        with connect(path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            db.execute(
+                "DELETE FROM circle_invite_codes WHERE account_id=?",
+                (user["id"],),
+            )
+        return Response(status_code=204)
+
     @app.post("/api/circles/{circle_id}/invite", status_code=201)
     def invite_to_circle(circle_id: int, body: CircleInviteIn,
                          user=Depends(account)):
