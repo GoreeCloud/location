@@ -485,6 +485,7 @@ def create_app(db_path: Path | None = None) -> FastAPI:
             device = owned_device(db, user["id"], device_id)
             was_paused = bool(device["tracking_paused"])
             if body.paused != was_paused:
+                changed_at = utc_now()
                 if body.paused:
                     db.execute(
                         "UPDATE devices SET tracking_paused=1 WHERE id=? AND account_id=?",
@@ -494,14 +495,51 @@ def create_app(db_path: Path | None = None) -> FastAPI:
                     db.execute(
                         """UPDATE devices SET tracking_paused=0,tracking_resumed_at=?
                            WHERE id=? AND account_id=?""",
-                        (utc_now(), device_id, user["id"]),
+                        (changed_at, device_id, user["id"]),
                     )
                     # No transition can be inferred across a paused interval.
                     db.execute("DELETE FROM geofence_state WHERE device_id=?", (device_id,))
+                db.execute(
+                    "INSERT INTO collection_activity(device_id,action,changed_at) VALUES(?,?,?)",
+                    (device_id, "paused" if body.paused else "resumed", changed_at),
+                )
+                # Retain at most 100 recent control changes for each device.
+                db.execute(
+                    """DELETE FROM collection_activity WHERE device_id=? AND id NOT IN (
+                       SELECT id FROM collection_activity
+                       WHERE device_id=? ORDER BY id DESC LIMIT 100)""",
+                    (device_id, device_id),
+                )
             current = owned_device(db, user["id"], device_id)
             return {"device_id": device_id,
                     "tracking_paused": bool(current["tracking_paused"]),
                     "tracking_resumed_at": current["tracking_resumed_at"]}
+
+    @app.get("/api/privacy/collection-activity")
+    def collection_activity(device_id: int | None = None,
+                            limit: int = Query(default=50, ge=1, le=100),
+                            user=Depends(account)):
+        """Read recent collection-control decisions for this account only.
+
+        Activity contains no GPS coordinates, IP addresses or device tokens.
+        """
+        clauses = ["d.account_id=?"]
+        args: list[object] = [user["id"]]
+        with connect(path) as db:
+            if device_id is not None:
+                owned_device(db, user["id"], device_id)
+                clauses.append("a.device_id=?")
+                args.append(device_id)
+            query = (
+                """SELECT a.id,a.device_id,d.name AS device_name,
+                          a.action,a.changed_at
+                   FROM collection_activity a
+                   JOIN devices d ON d.id=a.device_id WHERE """
+                + " AND ".join(clauses)
+                + " ORDER BY a.id DESC LIMIT ?"
+            )
+            rows = db.execute(query, [*args, limit]).fetchall()
+        return [rowdict(row) for row in rows]
 
     @app.post("/api/devices/{device_id}/rotate-token")
     def rotate_device_token(device_id: int, user=Depends(account)):

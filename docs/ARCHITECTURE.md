@@ -106,3 +106,7 @@ Additive SQLite device columns track an owner-selected pause flag and the UTC se
 ## History cursor navigation
 
 The client maintains two distinct position sets: up to 1,000 recent locations for the overview map and bounded History pages of 100 fetched through the existing owner-only keyset API. A returned cursor combines timestamp and stable point ID for deterministic continuation; it is never treated as authorization. Changing the device filter invalidates the old paging generation, and logging out clears accumulated rows/cursors. Requests originating from an old session or older filter generation are ignored. Loading older pages is an explicit user action, not unbounded polling or automatic full-archive map rendering.
+
+## Bounded collection-setting activity
+
+A small `collection_activity` SQLite table references existing device IDs using `ON DELETE CASCADE`. Each genuine pause/resume transition inserts a server timestamp and action inside the **same** owner-authenticated `BEGIN IMMEDIATE` transaction as the device state change. Idempotent requests do not append records. A per-device SQL prune retains only the newest 100 rows; an index on `(device_id,id DESC)` supports this bound. The `/api/privacy/collection-activity` endpoint joins the owning device/account, never returns tracker tokens or coordinates, and caps responses at 100 records. There is no separate task worker, external notification or cross-account sharing.

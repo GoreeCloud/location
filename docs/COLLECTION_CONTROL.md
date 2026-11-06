@@ -35,3 +35,9 @@ Only the device owner may control this endpoint. Unauthorized sessions and devic
 - **Database upgrade:** Existing SQLite devices acquire additive `tracking_paused` and `tracking_resumed_at` columns. Historical points, device identities and tracker credentials remain unchanged. Back up private data before any production-like software upgrade.
 
 See [Security](SECURITY.md), [API](API.md), [Architecture](ARCHITECTURE.md), and [Implementation status](STATUS.md).
+
+## Owner-only collection activity
+
+Each actual change between paused and resumed records an action and server UTC timestamp in the same SQLite transaction as the collection setting. Repeating the same request does not create a duplicate. The service keeps at most **100** recent changes per registered device and shows the newest **50** account-owned records in **Privacy**. An authenticated owner can query `GET /api/privacy/collection-activity?limit=50` with optional `device_id`; limits range from 1 to 100. An ingestion-only token cannot read the records, and the SQL query verifies account ownership on each read.
+
+The table stores only a device reference, action (`paused` or `resumed`) and server timestamp. Device names are joined from the owner's current device listing at read time; no GPS coordinates, network addresses, user agents, or tokens are written to this activity table. Reverse proxies may have separate access logs under their own policies. Clearing GPS history does **not** clear these privacy-control decisions; deleting a device removes its activity through database foreign-key cascade. Older entries are pruned on later setting changes; no scheduler or offsite replication is implied. These records are not forensic-proof or tamper-evident logs.

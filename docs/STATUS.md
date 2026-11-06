@@ -322,3 +322,14 @@ Verification: [PR #24](https://github.com/GoreeCloud/location/pull/24) merged af
 - Add synthetic Chromium journeys on desktop/tablet/phone that browse 109 positions across two pages and verify filter reset.
 
 Verification: [PR #25](https://github.com/GoreeCloud/location/pull/25) merged after final [GitHub CI run 42218120821](https://github.com/GoreeCloud/location/actions/runs/42218120821) passed **81 API tests**, Python compilation, JavaScript syntax and desktop/tablet/phone Chromium browser journeys (7 framework/dependency warnings). No live service or real GPS histories were modified. Real-world archive-scale performance, full screen-reader acceptance, and production security remain separate gates.
+
+## Development cycle 23 — private collection-control activity
+
+**Candidate implementation on a review branch; CI and merge pending (November 6, 2026):**
+
+- Record genuine device collection pause and resume transitions atomically alongside each owner-only state change.
+- Keep a bounded recent activity history (100 per device), with no GPS coordinates, network addresses or tokens; delete records when a device is removed.
+- Add a session-only, owner-scoped activity endpoint and a Privacy settings timeline of up to 50 recent changes.
+- Add API regressions for idempotence, isolation, record limits, schema migration and deletion behavior; extend three-viewport Chromium tests for visibility and cross-account browser cleanup.
+
+**Limits:** Deliberate GPS history erasure retains privacy-control activity, device deletion removes it; proxy access logs are separate. No tamper-evident security audit, automatic backup or production deployment is claimed.

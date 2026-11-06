@@ -67,13 +67,18 @@ async function run(){
    assert.equal(await page.locator("#view-settings").isVisible(),true);
    const cardBoxes=await page.locator("#view-settings .prose-card").evaluateAll(nodes=>
      nodes.map(node=>{const b=node.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width};}));
-   assert.equal(cardBoxes.length,3,"Three settings panels must remain visible");
-   if(v.width>=1191) {
-     assert.ok(Math.abs(cardBoxes[0].y-cardBoxes[2].y)<=2,"Desktop settings panels should form one balanced row");
-   } else if(v.width>680) {
-     assert.ok(cardBoxes[2].width>cardBoxes[0].width*1.5,"Tablet final panel should span both columns");
+   assert.equal(cardBoxes.length,4,"Four privacy settings panels must remain visible");
+   if(v.width>680) {
+     assert.ok(Math.abs(cardBoxes[0].y-cardBoxes[1].y)<=2,
+       "Privacy cards 1 and 2 should share a row");
+     assert.ok(Math.abs(cardBoxes[2].y-cardBoxes[3].y)<=2,
+       "Privacy cards 3 and 4 should share a row");
+     assert.ok(cardBoxes[2].y>cardBoxes[0].y,
+       "Second row should follow the first row");
    } else {
-     assert.ok(cardBoxes[2].y>cardBoxes[1].y,"Phone settings panels should stack vertically");
+     assert.ok(cardBoxes.every((card,index)=>
+       !index || card.y>cardBoxes[index-1].y),
+       "Phone privacy cards should stack vertically");
    }
    await page.locator("#retention-preview").click();
    await page.locator("#retention-summary").getByText("0 GPS points").waitFor();
@@ -124,6 +129,11 @@ async function run(){
    await resumeButton.click();
    await pauseButton.waitFor({state:"visible"});
    assert.equal(await page.locator("#capture-location").isDisabled(),false);
+   await nav("settings").click();
+   const privacyEvents=page.locator("#collection-activity");
+   assert.match(await privacyEvents.innerText(),/Collection resumed/);
+   assert.match(await privacyEvents.innerText(),/Collection paused/);
+   assert.match(await privacyEvents.innerText(),new RegExp(deviceName));
    await nav("overview").click();
    await ctx.grantPermissions(["geolocation"],{origin:url});
    await ctx.setGeolocation({latitude:35.987,longitude:-83.915,accuracy:12});
@@ -236,6 +246,8 @@ async function run(){
    const cleared=await page.evaluate(()=>({
      deviceCount:state.devices.length,pointCount:state.points.length,
      placeCount:state.places.length,eventCount:state.events.length,
+     activityCount:state.collectionActivity.length,
+     activityText:document.querySelector("#collection-activity").textContent,
      retainedSelection:state.selectedHistoryDevice,
      mapCoordinates:document.querySelector("#map-coordinates").textContent,
      oldDeviceText:document.querySelector("#devices-list").textContent,
@@ -247,6 +259,8 @@ async function run(){
      [cleared.deviceCount,cleared.pointCount,cleared.placeCount,cleared.eventCount],
      [0,0,0,0],"Signed-out session must not retain private point arrays");
    assert.equal(cleared.retainedSelection,"");
+   assert.equal(cleared.activityCount,0);
+   assert.doesNotMatch(cleared.activityText,/Synthetic |Collection paused|Collection resumed/);
    assert.equal(cleared.mapCoordinates,"Waiting for location");
    assert.equal(cleared.secret,"");
    assert.equal(cleared.toast,"");
@@ -265,6 +279,7 @@ async function run(){
    await nav("history").click();
    assert.match(await page.locator("#history-table").innerText(),/No matching location records/);
    assert.doesNotMatch(await page.locator("#devices-list").innerText(),/Synthetic /);
+   assert.match(await page.locator("#collection-activity").innerText(),/No collection changes yet/);
    assert.equal(await page.locator("#map-markers").locator("*").count(),0);
    const secondLogout=page.locator(v.width<=680?"#mobile-logout":"#logout");
    await secondLogout.click();

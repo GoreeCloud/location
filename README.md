@@ -107,3 +107,5 @@ Historical GPX tracks and GeoJSON Point collections can be imported into an owne
 ### Browsing older location history
 
 The **History** view provides owner-authenticated cursor navigation, loading 100 locations per page with a **Load older positions** button. The device filter resets its cursor and an account sign-out clears accumulated rows. The overview map deliberately stays limited to recent locations rather than rendering a complete archive. The existing GPX and GeoJSON exports remain available for an entire owned device history. This is not public location sharing.
+
+**Collection privacy activity:** Privacy settings now show recent device pause/resume decisions, recorded by the server without GPS coordinates, IP addresses or tracker credentials. The latest 100 changes per device are kept in private SQLite storage and owner-visible via the API. These records are not a third-party tracking service. See [collection controls](docs/COLLECTION_CONTROL.md).

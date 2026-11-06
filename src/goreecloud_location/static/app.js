@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 const state = {
   token: sessionStorage.getItem("gc-location-session") || "",
-  user: null, devices: [], points: [], places: [], events: [],
+  user: null, devices: [], points: [], places: [], events: [], collectionActivity: [],
   retentionPreview: null,
   selectedHistoryDevice: "", zoomAdjust: 0, tileTemplate: "",
   historyItems: [], historyCursor: null, historyHasMore: false,
@@ -71,6 +71,7 @@ function signOutLocal() {
   state.points = [];
   state.places = [];
   state.events = [];
+  state.collectionActivity = [];
   state.selectedHistoryDevice = "";
   state.historyItems = [];
   state.historyCursor = null;
@@ -105,6 +106,7 @@ function signOutLocal() {
   renderPlaces();
   renderHistory();
   renderEvents();
+  renderCollectionActivity();
   renderCaptureSelect();
   // Hidden maps cannot be rerendered (zero dimensions); explicitly scrub
   // coordinates, SVG paths/pins, tile images and last-user metric values.
@@ -150,9 +152,10 @@ function makeRow(title, subtitle, when, icon = "◎") {
 
 async function refresh() {
   const requestToken = state.token;
-  const [summary, devices, points, places, events] = await Promise.all([
+  const [summary, devices, points, places, events, activity] = await Promise.all([
     api("/api/summary"), api("/api/devices"), api("/api/locations?limit=1000"),
-    api("/api/places"), api("/api/events?limit=50")
+    api("/api/places"), api("/api/events?limit=50"),
+    api("/api/privacy/collection-activity?limit=50")
   ]);
   // Ignore any response started before sign-out or an account switch.
   if (!state.user || !requestToken || state.token !== requestToken) return;
@@ -160,6 +163,7 @@ async function refresh() {
   state.points = points;
   state.places = places;
   state.events = events;
+  state.collectionActivity = activity;
   text("metric-points", Number(summary.points).toLocaleString());
   text("metric-devices", Number(summary.devices).toLocaleString());
   text("metric-places", Number(summary.places).toLocaleString());
@@ -168,6 +172,7 @@ async function refresh() {
   renderDevices();
   renderPlaces();
   renderEvents();
+  renderCollectionActivity();
   renderCaptureSelect();
   renderMap();
   await loadHistoryPage(true);
@@ -189,6 +194,22 @@ function renderEvents() {
   for (const e of state.events.slice(0, 6)) {
     list.append(makeRow(e.device_name + " · " + e.kind, e.place_name,
                         new Date(e.recorded_at).toLocaleDateString(), e.kind === "arrival" ? "↘" : "↗"));
+  }
+}
+function renderCollectionActivity() {
+  const node = $("collection-activity");
+  node.replaceChildren();
+  if (!state.collectionActivity.length) {
+    return empty(node, "No collection changes yet.");
+  }
+  for (const entry of state.collectionActivity) {
+    const paused = entry.action === "paused";
+    node.append(makeRow(
+      entry.device_name + " · Collection " + (paused ? "paused" : "resumed"),
+      "Server-side privacy setting changed",
+      fmtTime(entry.changed_at),
+      paused ? "Ⅱ" : "▷"
+    ));
   }
 }
 function confirmEraseHistory(name) {
