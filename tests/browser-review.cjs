@@ -224,6 +224,38 @@ async function run(){
      null,{timeout:10000});
    await page.locator("#history-more").waitFor({state:"visible"});
 
+   // Consent-first circles: recipient generates code, owner invites, then
+   // recipient makes a separate join decision. Neither step shares GPS.
+   const secondUser = "browserother"+v.name;
+   const secondSession = await page.request.post(url+"/api/auth/login",{
+     data:{username:secondUser,password:pass}
+   });
+   assert.equal(secondSession.status(),200);
+   const secondAuth = "Bearer " + (await secondSession.json()).access_token;
+   const oneTimeCode = await page.request.post(url+"/api/circle-invite-code",{
+     headers:{"Authorization":secondAuth}
+   });
+   assert.equal(oneTimeCode.status(),201);
+   const inviteCode = (await oneTimeCode.json()).invite_code;
+   await nav("circles").click();
+   assert.match(await page.locator("#view-circles").innerText(),/does not grant location access/i);
+   await page.locator("#circle-code-generate").click();
+   await page.getByRole("dialog",{name:"Your one-time invitation code"}).waitFor({state:"visible"});
+   assert.ok((await page.locator("#device-secret").textContent()).length>32);
+   await page.locator("#close-secret").click();
+   assert.equal(await page.locator("#device-secret").textContent(),"");
+   const circleName="Synthetic "+v.name+" family";
+   await page.locator("#circle-name").fill(circleName);
+   await page.locator("#circle-form button[type=submit]").click();
+   await page.locator("#circles-list").getByText(circleName).waitFor({state:"visible"});
+   await page.locator("#circle-invite-target").selectOption({index:1});
+   await page.locator("#circle-invite-code").fill(inviteCode);
+   await page.locator("#circle-invite-form button[type=submit]").click();
+   await page.getByRole("button",{name:"View members of "+circleName}).click();
+   await page.locator("#circle-members-list").getByText("pending",{exact:true})
+     .waitFor({state:"visible"});
+   assert.match(await page.locator("#circle-members-list").innerText(),new RegExp(secondUser));
+   await page.screenshot({path:path.join(evidence,v.name+"-circles.png"),fullPage:true});
    const geometry=await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
    assert.ok(geometry.width<=geometry.viewport+2,"Horizontal overflow "+v.name+" "+JSON.stringify(geometry));
    assert.deepEqual(errors,[],"Browser JS and console errors");
@@ -248,6 +280,10 @@ async function run(){
      placeCount:state.places.length,eventCount:state.events.length,
      activityCount:state.collectionActivity.length,
      activityText:document.querySelector("#collection-activity").textContent,
+     circleCount:state.circles.length,
+     circleInviteCount:state.circleInvitations.length,
+     circleMemberCount:state.circleMembers.length,
+     circleText:document.querySelector("#circles-list").textContent,
      retainedSelection:state.selectedHistoryDevice,
      mapCoordinates:document.querySelector("#map-coordinates").textContent,
      oldDeviceText:document.querySelector("#devices-list").textContent,
@@ -260,6 +296,9 @@ async function run(){
      [0,0,0,0],"Signed-out session must not retain private point arrays");
    assert.equal(cleared.retainedSelection,"");
    assert.equal(cleared.activityCount,0);
+   assert.deepEqual([cleared.circleCount,cleared.circleInviteCount,cleared.circleMemberCount],
+                    [0,0,0],"Circle metadata must be cleared at sign-out");
+   assert.doesNotMatch(cleared.circleText,/Synthetic .* family/);
    assert.doesNotMatch(cleared.activityText,/Synthetic |Collection paused|Collection resumed/);
    assert.equal(cleared.mapCoordinates,"Waiting for location");
    assert.equal(cleared.secret,"");
@@ -281,6 +320,23 @@ async function run(){
    assert.doesNotMatch(await page.locator("#devices-list").innerText(),/Synthetic /);
    assert.match(await page.locator("#collection-activity").innerText(),/No collection changes yet/);
    assert.equal(await page.locator("#map-markers").locator("*").count(),0);
+   await nav("circles").click();
+   await page.getByRole("button",{name:"Accept invitation to "+circleName})
+     .waitFor({state:"visible"});
+   assert.equal(await page.locator("#circles-list").getByText(circleName).count(),0);
+   page.once("dialog",dialog=>dialog.accept());
+   await page.getByRole("button",{name:"Accept invitation to "+circleName}).click();
+   await page.getByRole("button",{name:"View members of "+circleName})
+     .waitFor({state:"visible"});
+   assert.equal(await page.locator("#metric-points").textContent(),"0");
+   assert.equal(await page.locator("#metric-devices").textContent(),"0");
+   await page.getByRole("button",{name:"View members of "+circleName}).click();
+   await page.locator("#circle-members-list").getByText(secondUser).waitFor({state:"visible"});
+   page.once("dialog",dialog=>dialog.accept());
+   await page.getByRole("button",{name:"Leave circle "+circleName}).click();
+   await page.locator("#circles-list").getByText("No circles yet. Create one or accept an invitation.")
+     .waitFor({state:"visible"});
+   assert.equal(await page.locator("#metric-points").textContent(),"0");
    const secondLogout=page.locator(v.width<=680?"#mobile-logout":"#logout");
    await secondLogout.click();
    await page.locator("#login-screen").waitFor({state:"visible"});

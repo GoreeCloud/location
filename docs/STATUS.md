@@ -348,3 +348,14 @@ Verification: [PR #26](https://github.com/GoreeCloud/location/pull/26) merged af
 Verification: [PR #27](https://github.com/GoreeCloud/location/pull/27) merged after [GitHub Actions run 42223885777](https://github.com/GoreeCloud/location/actions/runs/42223885777) passed **92 API tests**, Python compilation, JavaScript syntax, and desktop/tablet/phone Chromium journeys. The initial test run exposed reusable SQLite invitation identifiers; those were fixed with nonreusable integer IDs, and expired pending invitations were filtered from the owner roster before the successful run.
 
 **Critical limit:** This is **membership metadata only**, not a working family location-sharing service. Distinct live and historical grants, consent audit/expiry and circle UI remain separate review gates. No real users were invited or tracked.
+
+## Development cycle 25 — Circles consent workspace
+
+**Candidate UI under GitHub CI review (November 6, 2026):**
+
+- Add a polished, responsive Circles page to desktop and mobile navigation, with explicit warnings that membership never enables GPS sharing.
+- Support owner circle creation, private one-time code generation, manual invitation by recipient-supplied code, recipient accept/decline and member revocation/exit.
+- Isolate and clear circle metadata and one-time codes on sign-out; guard asynchronous member roster results against account changes.
+- Extend Chromium desktop/tablet/phone journeys to test a two-account synthetic invitation, acceptance and exit without exposing location information.
+
+**Not yet included:** Live/history sharing grants or shared maps, automated notifications, production TLS/identity acceptance, and real device testing. No real account invitation is sent.

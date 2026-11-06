@@ -305,3 +305,8 @@ html[data-theme="light"] .button.danger-button { color: #fff; }
 
 .history-pager { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding-top:16px; }
 .history-pager p { color:var(--gc-text-faint); font-size:12px; margin:0; }
+
+#view-circles > .notice { margin-bottom: 22px; }
+#view-circles .card-list { max-height: 420px; overflow-y: auto; }
+#view-circles .item-card .list-body { min-width: 0; overflow-wrap: anywhere; }
+#view-circles .item-actions { align-self: center; }

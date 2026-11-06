@@ -44,3 +44,7 @@ The Chromium desktop (1440×900), tablet (820×1180), and phone (390×844) journ
 ## Collection-control activity and account isolation
 
 At each desktop/tablet/phone Chromium viewport, the journey pauses and resumes a synthetic tracker, opens **Privacy**, and checks that both actions appear for that owner. Signing out must purge the activity list from in-memory state and the rendered DOM; signing a different synthetic account into the same browser tab must show no other user's activity. The endpoint never supplies GPS coordinates or tokens. This is not a device attestation or production privacy audit.
+
+## Circles invitation and browser privacy acceptance
+
+Synthetic desktop, tablet and phone journeys verify the Circles screen's privacy warning, owner circle creation, one-time invite-code dialog cleanup, recipient-generated code submission, visibility of pending membership, and no sharing before explicit acceptance. After logging out of the owner account and into a separate recipient account in the same tab, tests require that only the addressed recipient sees the pending invitation; accepting creates metadata-only membership, with the recipient's GPS/device metrics still zero. The recipient can leave after confirmation. Old account circle lists, invitations and member rosters must be cleared on sign-out. The tests use entirely synthetic usernames and positions with loopback HTTP and no third-party requests.

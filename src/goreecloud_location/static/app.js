@@ -6,6 +6,8 @@ const $ = (id) => document.getElementById(id);
 const state = {
   token: sessionStorage.getItem("gc-location-session") || "",
   user: null, devices: [], points: [], places: [], events: [], collectionActivity: [],
+  circles: [], circleInvitations: [], circleMembers: [], selectedCircleId: null,
+  circleSequence: 0,
   retentionPreview: null,
   selectedHistoryDevice: "", zoomAdjust: 0, tileTemplate: "",
   historyItems: [], historyCursor: null, historyHasMore: false,
@@ -16,6 +18,7 @@ const headings = {
   history: ["Your location history.", "HISTORY"],
   places: ["Places & geofences.", "PLACES"],
   devices: ["Your tracking devices.", "DEVICES"],
+  circles: ["People you choose.", "CIRCLES"],
   settings: ["Privacy comes first.", "SETTINGS"]
 };
 
@@ -72,6 +75,11 @@ function signOutLocal() {
   state.places = [];
   state.events = [];
   state.collectionActivity = [];
+  state.circles = [];
+  state.circleInvitations = [];
+  state.circleMembers = [];
+  state.selectedCircleId = null;
+  state.circleSequence++;
   state.selectedHistoryDevice = "";
   state.historyItems = [];
   state.historyCursor = null;
@@ -90,10 +98,13 @@ function signOutLocal() {
   text("retention-summary", "No preview yet.");
   $("device-form").reset();
   $("place-form").reset();
+  $("circle-form").reset();
+  $("circle-invite-form").reset();
   $("history-import-file").value = "";
   if ($("secret-dialog").open) $("secret-dialog").close();
   if ($("erase-dialog").open) $("erase-dialog").close();
   text("device-secret", "");
+  text("copy-secret", "Copy token");
   text("user-label", "");
   text("user-avatar", "");
   clearTimeout(showToast.timer);
@@ -107,6 +118,9 @@ function signOutLocal() {
   renderHistory();
   renderEvents();
   renderCollectionActivity();
+  renderCircles();
+  renderCircleInvitations();
+  renderCircleMembers();
   renderCaptureSelect();
   // Hidden maps cannot be rerendered (zero dimensions); explicitly scrub
   // coordinates, SVG paths/pins, tile images and last-user metric values.
@@ -152,10 +166,11 @@ function makeRow(title, subtitle, when, icon = "◎") {
 
 async function refresh() {
   const requestToken = state.token;
-  const [summary, devices, points, places, events, activity] = await Promise.all([
+  const [summary, devices, points, places, events, activity, circles, invitations] = await Promise.all([
     api("/api/summary"), api("/api/devices"), api("/api/locations?limit=1000"),
     api("/api/places"), api("/api/events?limit=50"),
-    api("/api/privacy/collection-activity?limit=50")
+    api("/api/privacy/collection-activity?limit=50"),
+    api("/api/circles"), api("/api/circle-invitations")
   ]);
   // Ignore any response started before sign-out or an account switch.
   if (!state.user || !requestToken || state.token !== requestToken) return;
@@ -164,6 +179,14 @@ async function refresh() {
   state.places = places;
   state.events = events;
   state.collectionActivity = activity;
+  state.circles = circles;
+  state.circleInvitations = invitations;
+  if (state.selectedCircleId !== null &&
+      !circles.some(c => c.id === state.selectedCircleId)) {
+    state.selectedCircleId = null;
+    state.circleMembers = [];
+    state.circleSequence++;
+  }
   text("metric-points", Number(summary.points).toLocaleString());
   text("metric-devices", Number(summary.devices).toLocaleString());
   text("metric-places", Number(summary.places).toLocaleString());
@@ -173,6 +196,9 @@ async function refresh() {
   renderPlaces();
   renderEvents();
   renderCollectionActivity();
+  renderCircles();
+  renderCircleInvitations();
+  renderCircleMembers();
   renderCaptureSelect();
   renderMap();
   await loadHistoryPage(true);
@@ -210,6 +236,137 @@ function renderCollectionActivity() {
       fmtTime(entry.changed_at),
       paused ? "Ⅱ" : "▷"
     ));
+  }
+}
+async function loadCircleMembers(circleId) {
+  const requestToken = state.token, sequence = ++state.circleSequence;
+  state.selectedCircleId = circleId;
+  state.circleMembers = [];
+  renderCircleMembers();
+  try {
+    const members = await api("/api/circles/" + encodeURIComponent(circleId) + "/members");
+    if (!state.user || state.token !== requestToken ||
+        state.circleSequence !== sequence || state.selectedCircleId !== circleId) return;
+    state.circleMembers = members;
+    renderCircleMembers();
+  } catch (error) {
+    if (state.token === requestToken && state.circleSequence === sequence)
+      showToast(error.message);
+  }
+}
+function renderCircles() {
+  const node = $("circles-list");
+  node.replaceChildren();
+  const target = $("circle-invite-target");
+  const previous = target.value;
+  target.replaceChildren();
+  makeChoice(target, "", "Select one of your circles");
+  const owned = state.circles.filter(c => c.role === "owner");
+  for (const c of owned) makeChoice(target, c.id, c.name);
+  if (owned.some(c => String(c.id) === previous)) target.value = previous;
+  target.disabled = !owned.length;
+  if (!state.circles.length) return empty(node, "No circles yet. Create one or accept an invitation.");
+  for (const c of state.circles) {
+    const row = elt("div", "item-card");
+    const info = elt("div", "list-body");
+    info.append(elt("strong", "", c.name),
+                elt("p", "", c.role === "owner"
+                  ? "You own this private circle"
+                  : "Joined · invited by " + c.owner_username),
+                elt("p", "form-note", "Location sharing is off."));
+    const actions = elt("div", "item-actions");
+    const members = elt("button", "tiny-action", "Members");
+    members.type = "button";
+    members.setAttribute("aria-label", "View members of " + c.name);
+    members.addEventListener("click", () => loadCircleMembers(c.id));
+    const leave = elt("button", "tiny-action", c.role === "owner" ? "Delete" : "Leave");
+    leave.type = "button";
+    leave.setAttribute("aria-label",
+      (c.role === "owner" ? "Delete circle " : "Leave circle ") + c.name);
+    leave.addEventListener("click", async () => {
+      const owner = c.role === "owner";
+      if (!window.confirm((owner ? "Delete circle " : "Leave circle ") + c.name
+        + "? This removes membership only, never GPS histories.")) return;
+      try {
+        await api("/api/circles/" + c.id + (owner ? "" : "/membership"), {method:"DELETE"});
+        if (state.selectedCircleId === c.id) {
+          state.selectedCircleId = null;
+          state.circleMembers = [];
+          state.circleSequence++;
+        }
+        await refresh();
+        showToast(owner ? "Circle deleted." : "You left the circle.");
+      } catch (error) { showToast(error.message); }
+    });
+    actions.append(members, leave);
+    row.append(elt("div", "list-avatar", "◎"), info, actions);
+    node.append(row);
+  }
+}
+function renderCircleInvitations() {
+  const node = $("circle-invitations-list");
+  node.replaceChildren();
+  if (!state.circleInvitations.length) return empty(node, "No pending invitations.");
+  for (const pending of state.circleInvitations) {
+    const row = elt("div", "item-card");
+    const info = elt("div", "list-body");
+    info.append(elt("strong", "", pending.circle_name),
+      elt("p", "", "From " + pending.inviter_username),
+      elt("p", "form-note", "Expires " + fmtTime(pending.expires_at) + " · GPS sharing off"));
+    const actions = elt("div", "item-actions");
+    for (const accept of [true, false]) {
+      const control = elt("button", "tiny-action", accept ? "Accept" : "Decline");
+      control.type = "button";
+      control.setAttribute("aria-label",
+        (accept ? "Accept" : "Decline") + " invitation to " + pending.circle_name);
+      control.addEventListener("click", async () => {
+        if (accept && !window.confirm("Join " + pending.circle_name
+            + "? This joins membership only. No locations are shared.")) return;
+        try {
+          await api("/api/circle-invitations/" + pending.id + "/respond", {
+            method:"POST", body:JSON.stringify({accept})
+          });
+          await refresh();
+          showToast(accept ? "Joined circle. GPS stays private." : "Invitation declined.");
+        } catch (error) { showToast(error.message); }
+      });
+      actions.append(control);
+    }
+    row.append(elt("div", "list-avatar", "◇"), info, actions);
+    node.append(row);
+  }
+}
+function renderCircleMembers() {
+  const node = $("circle-members-list");
+  node.replaceChildren();
+  const circle = state.circles.find(c => c.id === state.selectedCircleId);
+  text("circle-members-title", circle ? circle.name + " · Members" : "Circle members");
+  if (!circle) return empty(node, "Choose a circle to view members.");
+  if (!state.circleMembers.length) return empty(node, "Loading members or no members yet.");
+  for (const member of state.circleMembers) {
+    const row = elt("div", "item-card");
+    const info = elt("div", "list-body");
+    info.append(elt("strong", "", member.username),
+      elt("p", "", member.role === "owner" ? "Circle owner" : member.status));
+    row.append(elt("div", "list-avatar", "◎"), info);
+    if (circle.role === "owner" && member.role !== "owner") {
+      const revoke = elt("button", "tiny-action", "Remove");
+      revoke.type = "button";
+      revoke.setAttribute("aria-label", "Remove " + member.username + " from " + circle.name);
+      revoke.addEventListener("click", async () => {
+        if (!window.confirm("Remove " + member.username
+            + " from " + circle.name + "?")) return;
+        try {
+          await api("/api/circles/" + circle.id + "/members/" + member.account_id,
+                    {method:"DELETE"});
+          await refresh();
+          await loadCircleMembers(circle.id);
+          showToast("Member removed.");
+        } catch (error) { showToast(error.message); }
+      });
+      row.append(revoke);
+    }
+    node.append(row);
   }
 }
 function confirmEraseHistory(name) {
@@ -590,10 +747,47 @@ function setupEvents() {
   });
   $("secret-dialog").addEventListener("close", () => {
     $("device-secret").textContent = "";
+    text("copy-secret", "Copy token");
   });
   $("copy-secret").addEventListener("click", async () => {
     try { await navigator.clipboard.writeText($("device-secret").textContent); showToast("Token copied."); }
     catch (_error) { showToast("Copy unavailable. Select the token and copy it manually."); }
+  });
+  $("circle-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      await api("/api/circles", {
+        method:"POST", body:JSON.stringify({name:$("circle-name").value})
+      });
+      $("circle-form").reset();
+      await refresh();
+      showToast("Private circle created. Location sharing is off.");
+    } catch (error) { showToast(error.message); }
+  });
+  $("circle-code-generate").addEventListener("click", async () => {
+    try {
+      const result = await api("/api/circle-invite-code", {method:"POST"});
+      text("secret-title", "Your one-time invitation code");
+      text("secret-description", "Share this code privately with someone you want to invite you. It expires in 30 minutes and is shown only once. Joining a circle never shares your GPS.");
+      text("device-secret", result.invite_code);
+      text("copy-secret", "Copy code");
+      $("secret-dialog").showModal();
+    } catch (error) { showToast(error.message); }
+  });
+  $("circle-invite-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const circleId = $("circle-invite-target").value;
+    const code = $("circle-invite-code").value.trim();
+    if (!circleId || !code) return showToast("Choose a circle and enter the recipient's private code.");
+    try {
+      await api("/api/circles/" + encodeURIComponent(circleId) + "/invite", {
+        method:"POST", body:JSON.stringify({invite_code:code})
+      });
+      $("circle-invite-code").value = "";
+      await refresh();
+      await loadCircleMembers(Number(circleId));
+      showToast("Invitation sent. The recipient must accept before joining.");
+    } catch (error) { showToast(error.message); }
   });
   $("place-form").addEventListener("submit", async (event) => {
     event.preventDefault();
