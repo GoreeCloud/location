@@ -40,7 +40,7 @@ The full scope below is categorized from the founder's 22-section product brief.
 
 **[Planned]** Private circles for family/friends/households/organizations, multiple circles, invitation/accept/decline, group administrators and roles, permission-isolated family map, member avatars/battery/location cards, group check-ins, consented location requests, trusted contacts, individualized live/history sharing, group trips/driving reports, arrivals/departures, member removal and access revocation, separate personal and shared records.
 
-**Safety gate:** No cross-account location access without explicit consent, auditable grants, and tested revocation.
+**Safety gate:** No cross-account location access without explicit consent, auditable grants, and tested revocation. The concrete deny-by-default design and negative-test matrix are in [Family Circles consent design](FAMILY_CIRCLES_CONSENT_DESIGN.md); this is a proposed gate, not a shipped feature.
 
 ## 6. Location sharing and privacy
 
