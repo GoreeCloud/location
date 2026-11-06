@@ -364,10 +364,10 @@ Verification: [PR #28](https://github.com/GoreeCloud/location/pull/28) merged af
 
 ## Development cycle 26 — invitee-controlled code revocation
 
-**Review-branch candidate; GitHub CI and merge pending (November 6, 2026):**
+**Merged in `main`, CI passed (November 6, 2026):**
 
 - Add owner-session-only `DELETE /api/circle-invite-code` with idempotent HTTP 204 and transactional code invalidation.
 - Add **Revoke my unused code** to the responsive Circles interface, with confirmation and a warning that pending/accepted memberships are unaffected.
 - Add synthetic regressions for revocation, cross-account isolation, device-token denial, one-time code reissue, pending invitation preservation, and membership separation. Exercise cancellation and confirmation in desktop/tablet/phone Chromium journeys.
 
-**Limits:** Codes copied outside the app cannot be erased remotely. Revocation does not retract invitations already sent or revoke accepted membership. Circles still grant no location-sharing permission. No real users, live GPS data or production systems are modified.
+Verification: [PR #29](https://github.com/GoreeCloud/location/pull/29) was squash-merged after [CI run 42231244001](https://github.com/GoreeCloud/location/actions/runs/42231244001) passed **95 automated API tests**, Python compilation, JS syntax checks, and desktop/tablet/phone Chromium browser journeys. The first run found an uninitialized third test account and an asynchronous mobile member-roster assertion; both tests were corrected and reverified. Seven framework/dependency warnings remain. No production or real GPS data was modified.\n\n**Limits:** Codes copied outside the app cannot be erased remotely. Revocation does not retract invitations already sent or revoke accepted membership. Circles still grant no location-sharing permission. No real users, live GPS data or production systems are modified.
