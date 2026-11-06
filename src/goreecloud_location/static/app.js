@@ -747,10 +747,47 @@ function setupEvents() {
   });
   $("secret-dialog").addEventListener("close", () => {
     $("device-secret").textContent = "";
+    text("copy-secret", "Copy token");
   });
   $("copy-secret").addEventListener("click", async () => {
     try { await navigator.clipboard.writeText($("device-secret").textContent); showToast("Token copied."); }
     catch (_error) { showToast("Copy unavailable. Select the token and copy it manually."); }
+  });
+  $("circle-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      await api("/api/circles", {
+        method:"POST", body:JSON.stringify({name:$("circle-name").value})
+      });
+      $("circle-form").reset();
+      await refresh();
+      showToast("Private circle created. Location sharing is off.");
+    } catch (error) { showToast(error.message); }
+  });
+  $("circle-code-generate").addEventListener("click", async () => {
+    try {
+      const result = await api("/api/circle-invite-code", {method:"POST"});
+      text("secret-title", "Your one-time invitation code");
+      text("secret-description", "Share this code privately with someone you want to invite you. It expires in 30 minutes and is shown only once. Joining a circle never shares your GPS.");
+      text("device-secret", result.invite_code);
+      text("copy-secret", "Copy code");
+      $("secret-dialog").showModal();
+    } catch (error) { showToast(error.message); }
+  });
+  $("circle-invite-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const circleId = $("circle-invite-target").value;
+    const code = $("circle-invite-code").value.trim();
+    if (!circleId || !code) return showToast("Choose a circle and enter the recipient's private code.");
+    try {
+      await api("/api/circles/" + encodeURIComponent(circleId) + "/invite", {
+        method:"POST", body:JSON.stringify({invite_code:code})
+      });
+      $("circle-invite-code").value = "";
+      await refresh();
+      await loadCircleMembers(Number(circleId));
+      showToast("Invitation sent. The recipient must accept before joining.");
+    } catch (error) { showToast(error.message); }
   });
   $("place-form").addEventListener("submit", async (event) => {
     event.preventDefault();
