@@ -138,3 +138,7 @@ The dedicated Circles screen is account-authenticated and does not render other 
 ## Unused invite-code revocation
 
 An account owner can invalidate their current unused recipient-generated circle invite code through an authenticated, serialized `DELETE /api/circle-invite-code` request. Revocation cannot affect another account's code, does not disclose whether a code existed, and cannot be performed with a write-only GPS tracker token. A revoked code cannot issue future invitations, but already-created pending invitations or accepted memberships require separate decline/leave actions. The UI requires confirmation. Clipboard copies, screenshots and external messages are outside the server's ability to erase.
+
+## Future circle sharing requires independent consent and review
+
+No current circle membership, invitation token, or owner action authorizes cross-account GPS, device, geofence, export, or history access. The proposed privacy invariants, authorization threat model, adversarial test matrix, UI and deployment release gates are in [Circle sharing security design](CIRCLE_SHARING_SECURITY_DESIGN.md). This is a **design proposal only**; it adds no active sharing permission. GoreeShield controls consent and retention, Wardveil reviews abuse/security threats, Mesh may integrate only verified narrow events, and GoreeCloud UI must make consent and revocation clear.

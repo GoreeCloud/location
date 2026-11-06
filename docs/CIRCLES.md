@@ -74,3 +74,7 @@ Related: [API](API.md), [Security](SECURITY.md), [Product spec](PRODUCT_SPEC.md)
 An invitee can choose **Revoke my unused code** in the Circles view and confirm, or call authenticated `DELETE /api/circle-invite-code`. An authorized call returns HTTP 204 even when no code is active. The old code cannot be used to create a new invitation; the user can intentionally generate a new one later. Only the signed-in account's code is affected.
 
 **Revocation does not cancel invitations that were already sent or revoke accepted memberships.** Pending invitations must be declined separately; accepted members can leave; owners may remove members. Codes copied to the operating-system clipboard or external messages cannot be erased by the server. Circle membership still grants **no GPS data or location sharing**.
+
+## Proposed sharing controls — security review required
+
+Circle membership is **not** a live or historical GPS grant. A proposed future sharing phase would require separate source-owner and recipient consent, exact device and member scope, independent history permissions, explicit expiry, and immediate revocation checks. These design gates are documented in [Circle sharing security design](CIRCLE_SHARING_SECURITY_DESIGN.md); they are **not implemented or enabled**. A deployment or PR merge alone cannot authorize exposing another account's coordinates.
