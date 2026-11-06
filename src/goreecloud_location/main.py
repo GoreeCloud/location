@@ -537,14 +537,17 @@ def create_app(db_path: Path | None = None) -> FastAPI:
                 "SELECT username FROM accounts WHERE id=?",
                 (circle["owner_account_id"],),
             ).fetchone()
-            conditions = "status IN ('pending','accepted')" if is_owner else "status='accepted'"
+            # Do not expose stale pending requests after their expiry.
+            conditions = ("(m.status='accepted' OR "
+                          "(m.status='pending' AND m.expires_at>?))") if is_owner else "m.status='accepted'"
+            args = (circle_id, utc_now()) if is_owner else (circle_id,)
             members = db.execute(
                 f"""SELECT m.account_id,m.status,a.username
                     FROM circle_memberships m
                     JOIN accounts a ON a.id=m.account_id
                     WHERE m.circle_id=? AND {conditions}
                     ORDER BY m.id""",
-                (circle_id,),
+                args,
             ).fetchall()
         return [{"account_id": circle["owner_account_id"],
                  "username": owner["username"], "role": "owner", "status": "accepted"}] + [
