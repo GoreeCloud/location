@@ -110,3 +110,7 @@ The client maintains two distinct position sets: up to 1,000 recent locations fo
 ## Bounded collection-setting activity
 
 A small `collection_activity` SQLite table references existing device IDs using `ON DELETE CASCADE`. Each genuine pause/resume transition inserts a server timestamp and action inside the **same** owner-authenticated `BEGIN IMMEDIATE` transaction as the device state change. Idempotent requests do not append records. A per-device SQL prune retains only the newest 100 rows; an index on `(device_id,id DESC)` supports this bound. The `/api/privacy/collection-activity` endpoint joins the owning device/account, never returns tracker tokens or coordinates, and caps responses at 100 records. There is no separate task worker, external notification or cross-account sharing.
+
+## Proposed circle membership and GPS grant separation
+
+Before any cross-account read is introduced, keep circle membership independent of location grants. The existing owner-scoped API queries must remain private. A future shared-read API will require explicit owner, device, recipient, separate live/history permission, valid expiration, current pause state and a non-revoked grant checked on every read, including after membership changes. The threat matrix and phased implementation gates are documented in [Family Circles consent design](FAMILY_CIRCLES_CONSENT_DESIGN.md). These APIs and schema do not yet exist.
