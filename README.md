@@ -103,3 +103,7 @@ The destination directory must already exist and the backup file must be new; ex
 
 Historical GPX tracks and GeoJSON Point collections can be imported into an owner-selected device from **History**, using one file chooser for CSV, GPX, and GeoJSON. Each importer has a 2 MiB / 5,000-record cap and rejects invalid data before writing. See [GPX import](docs/GPX_IMPORT.md) and [GeoJSON import](docs/GEOJSON_IMPORT.md).
 **Per-device server collection control:** Owners can pause or resume incoming GPS collection without deleting existing history or invalidating tracker keys. Paused devices reject live uploads, OwnTracks HTTP and archive imports; the browser disables direct GPS capture for paused devices. Resumption creates a new live geofence baseline and rejects queued live fixes timestamped before the resume time. See [device collection controls](docs/COLLECTION_CONTROL.md). These are server-side controls; client-side GPS recording may continue.
+
+### Browsing older location history
+
+The **History** view provides owner-authenticated cursor navigation, loading 100 locations per page with a **Load older positions** button. The device filter resets its cursor and an account sign-out clears accumulated rows. The overview map deliberately stays limited to recent locations rather than rendering a complete archive. The existing GPX and GeoJSON exports remain available for an entire owned device history. This is not public location sharing.
