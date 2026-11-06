@@ -325,11 +325,13 @@ Verification: [PR #25](https://github.com/GoreeCloud/location/pull/25) merged af
 
 ## Development cycle 23 — private collection-control activity
 
-**Candidate implementation on a review branch; CI and merge pending (November 6, 2026):**
+**Merged in `main`, synthetic API and Chromium CI passed (November 6, 2026):**
 
 - Record genuine device collection pause and resume transitions atomically alongside each owner-only state change.
 - Keep a bounded recent activity history (100 per device), with no GPS coordinates, network addresses or tokens; delete records when a device is removed.
 - Add a session-only, owner-scoped activity endpoint and a Privacy settings timeline of up to 50 recent changes.
 - Add API regressions for idempotence, isolation, record limits, schema migration and deletion behavior; extend three-viewport Chromium tests for visibility and cross-account browser cleanup.
+
+Verification: [PR #26](https://github.com/GoreeCloud/location/pull/26) merged after [GitHub Actions run 42220599372](https://github.com/GoreeCloud/location/actions/runs/42220599372) passed **86 automated API tests** (7 framework/dependency warnings), Python compilation, JavaScript syntax, and desktop/tablet/phone Chromium browser journeys, including separate-account privacy checks. An earlier browser run correctly detected a three-card layout test expectation after the fourth Privacy panel was added; the layout and tests were updated before merge. No production or real GPS histories were altered.
 
 **Limits:** Deliberate GPS history erasure retains privacy-control activity, device deletion removes it; proxy access logs are separate. No tamper-evident security audit, automatic backup or production deployment is claimed.
