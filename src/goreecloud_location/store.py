@@ -114,6 +114,14 @@ def initialize(path: Path) -> None:
             CREATE INDEX IF NOT EXISTS idx_events_device_time
                 ON events(device_id, recorded_at DESC, id DESC);
         """)
+        db.execute("""CREATE TABLE IF NOT EXISTS collection_activity (
+            id INTEGER PRIMARY KEY,
+            device_id INTEGER NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+            action TEXT NOT NULL CHECK(action IN ('paused','resumed')),
+            changed_at TEXT NOT NULL
+        )""")
+        db.execute("""CREATE INDEX IF NOT EXISTS idx_collection_activity_device
+            ON collection_activity(device_id, id DESC)""")
         # Preserve existing self-hosted databases while adding a reversible
         # owner collection switch. No GPS history or tracker credentials change.
         # Serialize migrations across concurrent service starts.
