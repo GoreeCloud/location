@@ -128,3 +128,7 @@ POST `/api/devices/{id}/import/geojson` with the account bearer session and raw 
 ## Per-device collection pause
 
 `PUT /api/devices/{id}/collection` requires an account bearer token and JSON `{"paused":true}` or `{"paused":false}`. Only a strict Boolean is accepted. The owner-specific response provides `device_id`, `tracking_paused`, and `tracking_resumed_at`; the device listing includes the same state. While paused, `/api/locations`, device bearer ingestion, OwnTracks location uploads and all owner archive import routes return HTTP 409 without adding points. Resuming sets a UTC cutoff that rejects queued live locations recorded before or at the cutoff, while allowing deliberately imported older history after resuming. Resumption resets the geofence baseline, not existing events. Tokens are retained and exports/erasure remain available. [Setup and caveats](COLLECTION_CONTROL.md).
+
+## Browsing history beyond the recent map
+
+The History dashboard loads `GET /api/locations/page?limit=100` for the initial 100 account-owned positions, and follows its `next_cursor` only after the user selects **Load older positions**. With a `device_id` filter, all pages remain restricted to that account-owned device. Selecting a different device resets the cursor. The endpoint returns `items`, `has_more` and `next_cursor`; a cursor is not a credential and the server independently authorizes every request. The overview map uses a separate bounded request for recent positions, while exports can stream complete owned histories.
