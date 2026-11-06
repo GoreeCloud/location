@@ -36,3 +36,7 @@ The Chromium suite now signs each synthetic account out after creating track his
 ## Per-device collection privacy journeys
 
 The browser regression exercises each device's **Pause collection** and **Resume collection** controls at desktop, tablet and phone widths with synthetic accounts. It confirms that pausing disables the browser GPS capture action, that a valid write-only device-token upload receives a server-side HTTP 409 while paused, and that the owner can explicitly resume. This is not end-to-end physical GPS client or consent verification.
+
+## Cursor-paged History browser regression
+
+The Chromium desktop (1440×900), tablet (820×1180), and phone (390×844) journeys create 109 synthetic account-owned positions. Each verifies a bounded 100-row first page, uses **Load older positions** to reveal the remaining records, and checks that changing the device filter starts a new cursor series. Existing logout and cross-account privacy journeys must continue passing. This is not evidence of full screen-reader acceptance or production performance on very large archives.
