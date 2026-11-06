@@ -16,6 +16,7 @@
     <symbol id="ico-route" viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M7 19h5a5 5 0 0 0 0-10h-2a4 4 0 0 1 0-8h7"/></symbol>
     <symbol id="ico-layers" viewBox="0 0 24 24"><path d="m12 2 10 6-10 6L2 8 12 2Zm-10 11 10 6 10-6M2 18l10 5 10-5"/></symbol>
     <symbol id="ico-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+    <symbol id="ico-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M17 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 5v1"/></symbol>
     <symbol id="ico-shield" viewBox="0 0 24 24"><path d="M12 2 21 6v6c0 5-3.5 8-9 10-5.5-2-9-5-9-10V6l9-4Z"/><path d="m8 12 3 3 5-6"/></symbol>
     <symbol id="ico-plus" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></symbol>
     <symbol id="ico-crosshair" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4"/></symbol>
@@ -65,6 +66,7 @@
         <button data-nav="history" class="nav-item"><svg><use href="#ico-route"/></svg><span>History</span></button>
         <button data-nav="places" class="nav-item"><svg><use href="#ico-layers"/></svg><span>Places</span></button>
         <button data-nav="devices" class="nav-item"><svg><use href="#ico-phone"/></svg><span>Devices</span></button>
+        <button data-nav="circles" class="nav-item"><svg><use href="#ico-users"/></svg><span>Circles</span></button>
       </nav>
       <div class="sidebar-label low">ACCOUNT</div>
       <nav class="nav" aria-label="Account navigation">
@@ -148,6 +150,48 @@
         </div>
       </section>
 
+      <section id="view-circles" class="view" hidden>
+        <div class="section-intro">
+          <h2>Connections, by invitation.</h2>
+          <p class="muted">Create private circles and choose which invitations to accept. Circle membership does not share GPS positions, history, devices, or maps.</p>
+        </div>
+        <div class="notice">PRIVACY FIRST: Joining a circle does not grant location access. Live and historical location sharing are not implemented.</div>
+        <div class="two-columns">
+          <form class="card detail-form" id="circle-form">
+            <div class="card-header"><div><span class="eyebrow">PRIVATE GROUPS</span><h3>Create a circle</h3></div></div>
+            <label for="circle-name">Circle name</label><input id="circle-name" maxlength="80" required placeholder="e.g. Family">
+            <p class="form-note">Circle names are visible only to owners and accepted members. You can own up to 20 circles.</p>
+            <button class="button primary full" type="submit">Create private circle</button>
+          </form>
+          <div class="card">
+            <div class="card-header"><div><span class="eyebrow">YOUR MEMBERSHIPS</span><h3>My circles</h3></div></div>
+            <div id="circles-list" class="card-list" aria-live="polite"><div class="empty-small">No circles yet.</div></div>
+          </div>
+          <div class="card prose-card">
+            <span class="eyebrow">RECIPIENT CHOICE</span><h3>Generate an invitation code</h3>
+            <p>Generate a one-time code and share it directly with someone you trust. They can invite you, but you still choose whether to accept. The code expires after 30 minutes.</p>
+            <button id="circle-code-generate" class="button outline" type="button">Generate my one-time code</button>
+            <p class="form-note">Do not post this code publicly. Generating a code does not join a circle or share location.</p>
+          </div>
+          <form class="card detail-form" id="circle-invite-form">
+            <div class="card-header"><div><span class="eyebrow">OWNER INVITATION</span><h3>Invite by private code</h3></div></div>
+            <label for="circle-invite-target">Your circle</label><select id="circle-invite-target" required><option value="">Create a circle first</option></select>
+            <label for="circle-invite-code">Recipient's one-time code</label>
+            <input id="circle-invite-code" autocomplete="off" spellcheck="false" required minlength="32" maxlength="96" placeholder="Paste their code">
+            <p class="form-note">The recipient must give you this code and then separately accept. It never grants their GPS data.</p>
+            <button class="button primary full" type="submit">Send private invitation</button>
+          </form>
+          <div class="card">
+            <div class="card-header"><div><span class="eyebrow">YOUR DECISION</span><h3>Pending invitations</h3></div></div>
+            <div id="circle-invitations-list" class="card-list" aria-live="polite"><div class="empty-small">No pending invitations.</div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div><span class="eyebrow">MEMBERSHIP</span><h3 id="circle-members-title">Circle members</h3></div></div>
+            <div id="circle-members-list" class="card-list" aria-live="polite"><div class="empty-small">Choose a circle to view members.</div></div>
+          </div>
+        </div>
+      </section>
+
       <section id="view-settings" class="view" hidden>
         <div class="section-intro"><h2>Yours to control.</h2><p class="muted">Location data belongs to you. Know what this preview does and does not do.</p></div>
         <div class="two-columns">
@@ -171,7 +215,7 @@
             <div id="collection-activity" class="scroll-list" aria-live="polite"><div class="empty-small">No collection changes yet.</div></div>
             <p class="form-note">Up to 100 actions are kept per device. Device deletion removes its activity; clearing GPS history does not.</p>
           </div>
-          <div class="card prose-card"><span class="eyebrow">DEVELOPMENT PREVIEW</span><h3>Know the boundaries</h3><p>Browser location capture requires your permission and a secure context (HTTPS or localhost). It is manual, not a native background-tracking client.</p><p>Family circles, push alerts, crash detection, professional emergency dispatch, native apps, and fleet integrations are future work—not active safety services.</p><p>Do not use this preview for emergency response or critical real-time monitoring.</p></div>
+          <div class="card prose-card"><span class="eyebrow">DEVELOPMENT PREVIEW</span><h3>Know the boundaries</h3><p>Browser location capture requires your permission and a secure context (HTTPS or localhost). It is manual, not a native background-tracking client.</p><p>Circle memberships are available without GPS sharing. Family location-sharing grants, push alerts, crash detection, professional emergency dispatch, native apps, and fleet integrations remain future work—not active safety services.</p><p>Do not use this preview for emergency response or critical real-time monitoring.</p></div>
         </div>
       </section>
     </main>
@@ -180,6 +224,7 @@
       <button data-nav="history"><svg><use href="#ico-route"/></svg><span>History</span></button>
       <button data-nav="places"><svg><use href="#ico-layers"/></svg><span>Places</span></button>
       <button data-nav="devices"><svg><use href="#ico-phone"/></svg><span>Devices</span></button>
+      <button data-nav="circles"><svg><use href="#ico-users"/></svg><span>Circles</span></button>
       <button data-nav="settings"><svg><use href="#ico-shield"/></svg><span>Privacy</span></button>
     </nav>
   </div>
