@@ -133,6 +133,8 @@ async function run(){
    await page.getByText("Location captured privately.").waitFor({state:"visible",timeout:10000});
    await page.screenshot({path:path.join(evidence,v.name+"-overview-tracked.png"),fullPage:true});
    await nav("history").click();
+   await page.locator("#history-table").getByText("Synthetic "+v.name+" device").first()
+     .waitFor({state:"visible"});
    assert.match(await page.locator("#history-table").innerText(),new RegExp("Synthetic "+v.name+" device"));
    const pointsBeforeImport=Number((await page.locator("#metric-points").textContent()).replaceAll(",",""));
    await page.locator("#history-device").selectOption({index:1});
@@ -185,6 +187,33 @@ async function run(){
    await page.getByText("Choose a .csv, .gpx or .geojson file.").waitFor({state:"visible"});
    assert.equal(unexpectedImportRequests,0,"Unsupported file must not generate an HTTP import");
    await page.screenshot({path:path.join(evidence,v.name+"-history.png"),fullPage:true});
+
+   // The UI must reach beyond its initial 100 owner-scoped records.
+   const extraCsv = "latitude,longitude,recorded_at\n"
+     + Array.from({length:105},(_,i)=>
+       (35.1 + i*0.0001).toFixed(6) + ",-83.45,"
+       + new Date(Date.UTC(2026,9,2,12,0,i)).toISOString()).join("\n") + "\n";
+   await page.locator("#history-import-file").setInputFiles({
+     name:"synthetic-bulk-history.csv",mimeType:"text/csv",
+     buffer:Buffer.from(extraCsv)
+   });
+   await page.locator("#history-import").click();
+   await page.waitForFunction(previous=>
+     Number(document.querySelector("#metric-points").textContent.replaceAll(",",""))===previous+108,
+     pointsBeforeImport,{timeout:15000});
+   await page.locator("#history-more").waitFor({state:"visible"});
+   assert.equal(await page.locator("#history-table tr").count(),100);
+   await page.locator("#history-more").click();
+   await page.waitForFunction(()=>
+     document.querySelector("#history-table").querySelectorAll("tr").length===109,
+     null,{timeout:10000});
+   assert.equal(await page.locator("#history-more").isVisible(),false);
+   await page.locator("#history-device").selectOption("");
+   await page.waitForFunction(()=>
+     document.querySelector("#history-table").querySelectorAll("tr").length===100,
+     null,{timeout:10000});
+   await page.locator("#history-more").waitFor({state:"visible"});
+
    const geometry=await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
    assert.ok(geometry.width<=geometry.viewport+2,"Horizontal overflow "+v.name+" "+JSON.stringify(geometry));
    assert.deepEqual(errors,[],"Browser JS and console errors");
