@@ -40,3 +40,7 @@ The browser regression exercises each device's **Pause collection** and **Resume
 ## Cursor-paged History browser regression
 
 The Chromium desktop (1440×900), tablet (820×1180), and phone (390×844) journeys create 109 synthetic account-owned positions. Each verifies a bounded 100-row first page, uses **Load older positions** to reveal the remaining records, and checks that changing the device filter starts a new cursor series. Existing logout and cross-account privacy journeys must continue passing. This is not evidence of full screen-reader acceptance or production performance on very large archives.
+
+## Collection-control activity and account isolation
+
+At each desktop/tablet/phone Chromium viewport, the journey pauses and resumes a synthetic tracker, opens **Privacy**, and checks that both actions appear for that owner. Signing out must purge the activity list from in-memory state and the rendered DOM; signing a different synthetic account into the same browser tab must show no other user's activity. The endpoint never supplies GPS coordinates or tokens. This is not a device attestation or production privacy audit.
