@@ -165,6 +165,12 @@
             <button id="retention-purge" class="button danger-button" type="button">Permanently delete old records</button>
             <p class="form-note">Only your account's old positions and geofence events are affected. Devices remain registered. Separate backups, downloaded exports and offline caches are not erased.</p>
           </div>
+          <div class="card prose-card">
+            <span class="eyebrow">COLLECTION ACTIVITY</span><h3>Recent privacy decisions</h3>
+            <p>Review the last 50 server-side pause and resume actions for your devices. No GPS coordinates, IP addresses, or tracker keys are recorded here.</p>
+            <div id="collection-activity" class="scroll-list" aria-live="polite"><div class="empty-small">No collection changes yet.</div></div>
+            <p class="form-note">Up to 100 actions are kept per device. Device deletion removes its activity; clearing GPS history does not.</p>
+          </div>
           <div class="card prose-card"><span class="eyebrow">DEVELOPMENT PREVIEW</span><h3>Know the boundaries</h3><p>Browser location capture requires your permission and a secure context (HTTPS or localhost). It is manual, not a native background-tracking client.</p><p>Family circles, push alerts, crash detection, professional emergency dispatch, native apps, and fleet integrations are future work—not active safety services.</p><p>Do not use this preview for emergency response or critical real-time monitoring.</p></div>
         </div>
       </section>
