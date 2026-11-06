@@ -314,11 +314,11 @@ Verification: [PR #24](https://github.com/GoreeCloud/location/pull/24) merged af
 
 ## Development cycle 22 — private, cursor-paged History browsing
 
-**Review branch, automated checks passed; merge pending (November 6, 2026):**
+**Merged in `main`, API and Chromium CI successful (November 6, 2026):**
 
 - Use `/api/locations/page` for the History view, with explicit 100-position pages and **Load older positions**.
 - Keep the map's bounded recent-position feed separate from the growing History table.
 - Reset History cursors on device changes and account sign-out; ignore delayed responses associated with an old session or filter generation.
 - Add synthetic Chromium journeys on desktop/tablet/phone that browse 109 positions across two pages and verify filter reset.
 
-Verification: [PR #25](https://github.com/GoreeCloud/location/pull/25) follows [CI run 42128908451](https://github.com/GoreeCloud/location/actions/runs/42128908451), where **81 API tests**, Python compilation, JS syntax and all three browser viewport journeys passed. No live service or real GPS histories were modified. Real-world archive-scale performance, full screen-reader acceptance, and production security remain separate gates.
+Verification: [PR #25](https://github.com/GoreeCloud/location/pull/25) merged after final [GitHub CI run 42218120821](https://github.com/GoreeCloud/location/actions/runs/42218120821) passed **81 API tests**, Python compilation, JavaScript syntax and desktop/tablet/phone Chromium browser journeys (7 framework/dependency warnings). No live service or real GPS histories were modified. Real-world archive-scale performance, full screen-reader acceptance, and production security remain separate gates.
