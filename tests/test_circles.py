@@ -155,6 +155,8 @@ def test_expiry_is_checked_on_both_invite_and_acceptance(client, tmp_path):
     with connect(tmp_path / "private" / "location.db") as db:
         db.execute("UPDATE circle_memberships SET expires_at='2000-01-01T00:00:00Z' WHERE id=?", (rid,))
     assert client.get("/api/circle-invitations", headers=bob).json() == []
+    assert len(client.get(f"/api/circles/{owned['id']}/members",
+                          headers=alice).json()) == 1
     assert client.post(f"/api/circle-invitations/{rid}/respond",
                        headers=bob, json={"accept": True}).status_code == 410
     assert client.get("/api/circles", headers=bob).json() == []
