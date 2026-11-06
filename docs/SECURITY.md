@@ -126,3 +126,7 @@ The History interface now uses the account-checked cursor page endpoint rather t
 ## Private collection-control activity records
 
 The server records genuine owner-driven collection pauses/resumptions for transparency. Each row contains only a device reference, an action and server UTC time. A single transaction updates the pause flag, writes the activity row and prunes the device history to 100 events; repeated requests that leave the state unchanged do not create records. The owner-only read API verifies the account on every query and returns current device names but **no GPS positions, passwords, device-upload keys, IP addresses or user agents**. Reverse-proxy access logs are independently governed. Clearing ordinary GPS history leaves these control records intact; device deletion cascades them. The records are not tamper-evident, legally certified audit trails and do not establish informed consent by themselves.
+
+## Proposed family sharing authorization gate
+
+Private circles require an explicit device-owner grant to a named recipient and exact device, with separately approved live and historical scopes, expiry, immediate revocation and server-side authorization on every shared read. Membership alone must never grant GPS access. Existing owner-only APIs remain unchanged until negative authorization tests and independent security/privacy review pass. See [Family Circles consent design](FAMILY_CIRCLES_CONSENT_DESIGN.md). No circle or cross-account sharing functionality is implemented at this milestone.
