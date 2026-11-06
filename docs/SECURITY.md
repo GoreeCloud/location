@@ -118,3 +118,7 @@ This prevents accidental carryover of a prior account's GPS display within a reu
 ## Per-device server-side collection pause
 
 An authenticated owner can use `PUT /api/devices/{id}/collection` with a strict JSON Boolean to pause or resume new location writes. Device tokens and other account sessions cannot change this setting. The pause is checked inside the SQLite writer transaction before accepting live GPS or owner archive imports; a 409 means no point was written. Resume stores a UTC cutoff, rejects live fixes with earlier or equal client-supplied timestamps, and resets current geofence state to avoid inferring travel during the pause. Previously stored GPS and exports remain accessible and are not erased. Server refusal is **not** a guarantee that a hardware device or third-party client stopped recording locally or that client timestamps are trustworthy. Production TLS, native device acceptance, consent and threat-model review remain separate. [Detailed behavior](COLLECTION_CONTROL.md).
+
+## Session-bound browser History pagination
+
+The History interface now uses the account-checked cursor page endpoint rather than client-only filtering of the map's latest 1,000 points. Device ownership is enforced in SQL for every page regardless of cursor. The browser clears historical pages and cursor state on sign-out, and does not apply delayed responses after the session or selected device changes. A cursor confers no rights; exported archives, downloaded data, screenshots and offline copies must be protected separately.
