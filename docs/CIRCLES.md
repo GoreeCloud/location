@@ -11,6 +11,14 @@
 5. The invitee sees pending requests through `GET /api/circle-invitations` and responds with an explicit `{"accept":true}` or `{"accept":false}` to `POST /api/circle-invitations/{invitation_id}/respond`.
 6. **Only after accepting** does the member see the circle name, owner's username and accepted member roster. Joining is not a GPS sharing grant. Declining means no membership. An account can leave an accepted circle at any time.
 
+## Circles workspace in the browser
+
+Sign in and open **Circles** from the desktop/sidebar or mobile navigation. Create a named circle, or choose **Generate my one-time code** to receive an invite code in a one-time dialog. Share the code **manually and privately** with someone you want to invite you. A circle owner can paste a recipient-supplied code into **Invite by private code**. The intended recipient sees the pending invitation in their own Circles view, and must **Accept** or **Decline**. Joining remains metadata only; the screen always states that GPS sharing is disabled.
+
+Owners can view members and remove pending/accepted members. Accepted members may leave at any time; owners can delete entire circles after confirmation. The UI clears circle lists, invitation codes and member rosters when an account signs out and never accesses another account's GPS data.
+
+The browser implementation is a convenience layer around the owner/recipient authorized API. Server authorization, expiry, caps and revocation remain authoritative. No invitation is sent by email, SMS or push notification. This is not a live family map.
+
 ## Authenticated API
 
 | Method | Path | Who can use it | Meaning |
