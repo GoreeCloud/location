@@ -1,48 +1,38 @@
 # Implementation Status — GoreeCloud Location
 
-**As of 3 November 2026 · 0.1.0 development foundation**
+**Current summary: 6 November 2026 · v0.1.0 development preview, not deployed**
 
-The requested 22-category specification is the **target roadmap**, not a statement that those features are already present. There are no claims of a signed mobile release, production deployment, completed GoreeCloud UI screenshot audit, security certification, or a professional emergency-response integration.
+This is a snapshot of source capabilities and synthetic GitHub CI acceptance. The original 22-category product specification remains a roadmap, not proof of release. No native app release, customer deployment, production TLS/reverse-proxy acceptance, complete GoreeCloud UI certification, independent penetration test, or professional emergency service is claimed. Historical development-cycle notes below retain their original time-specific wording and should not be mistaken for the latest state.
 
-| Capability | Status | Evidence |
+| Capability | Current verified source status | Remaining boundary |
 | --- | --- | --- |
-| Self-hosted API and SQLite persistence | GitHub CI API tests pass; deployment not verified | `main.py`, `store.py`, Dockerfile |
-| Local account setup; sessions; logout | API test coverage passes; deployment not verified | `cli.py`, `main.py` |
-| Owner-isolated device registration and ingestion | API test coverage passes; deployment not verified | `main.py`, `tests/test_api.py` |
-| Location history, last-known position | Cursor pagination and history tests passed in GitHub CI; deployment unverified | `GET /api/locations`, `GET /api/devices` |
-| Circular geofences and event history | API test coverage passes; deployment not verified | `places`, `geofence_state`, `events` |
-| Browser GPS capture on user action | Implemented in source, browser/device UX unverified | `static/app.js` |
-| Responsive dashboard and private coordinate visualization | Implemented in source, visual acceptance unverified | `static/index.html`, `styles.css` |
-| Same-origin optional tile overlays | Implemented integration point, tile server not included | `GC_TILE_TEMPLATE` |
-| Full streaming GPX/GeoJSON exports | API test coverage passes; deployment not verified | `/api/export/*` |
-| Native Android / iOS / Linux app | Not implemented | Future milestone |
-| Family circles and consented live sharing | Not implemented | Future milestone |
-| Location import pipelines, photo timeline, exploration analytics | Bounded CSV import added in development source; broader provider imports and insights not implemented | Future milestone |
-| Fleet protocol adapters / specialized GPS hardware integrations | Not implemented | Future milestone |
-| Driving safety scoring and crash detection | Not implemented | Future milestone |
-| Emergency SOS dispatch and service-provider coordination | Not implemented | Future milestone |
-| Pet/item networks and Bluetooth tracking | Not implemented | Future milestone |
-| External notification gateways and automation connectors | Not implemented | Future milestone |
-| Security hardening, scale, backup restore testing | Device-key rotation, owner-only database modes and manual backups in source; full hardening and production restore acceptance pending | `docs/SECURITY.md` |
-| GC UI acceptance and MIPS integrations | Specification reviewed; not validated | GC UI source authority |
+| Account and SQLite API | Private accounts, session login/logout and account-wide session revocation; owner-scoped database queries, owner-only backup files | No production deployment, external identity-provider/MFA or distributed hardening |
+| GPS device registration and ingest | Private one-time device keys, rotation, account/user GPS upload and OwnTracks-compatible HTTP receiver | Real OwnTracks Android/iOS devices and physical trackers not validated end-to-end |
+| Collection privacy | Explicit owner pause/resume, time cutoff for queued live fixes, geofence-baseline reset; private bounded collection-decision history | Mobile hardware may still track locally; timestamps are not attested |
+| GPS history and exports | Owner-only recent positions, 100-row cursor-paged History browser, complete streaming GPX and GeoJSON exports | Very large archives and production performance not independently tested |
+| History imports | Bounded owner-only CSV, GPX 1.0/1.1 and GeoJSON Point imports; atomic validation and duplicate checks | Google Takeout, FIT/TCX/KML and large resumable migrations not implemented |
+| Geofences | Owner-created circular places, accurate chronological transitions and account-scoped events | No push notifications, emergency dispatch or real-world safety certification |
+| Browser UI | Responsive dashboard, deliberate browser GPS capture, private map visualization, device control, history, privacy and Circles views | Synthetic Chromium desktop/tablet/phone accepted; full accessibility and physical-client review still pending |
+| Self-hosted map overlays | Optional same-origin tile template and CSP restrictions; coordinate-only fallback | No included tile server, turn-key global maps, geocoding or map-data distribution |
+| Circles | Private named circles, one-time invitations, accept/decline, owner removal, member exit and unused-code revocation | **Membership shares zero GPS/history/device access**; separate, consented cross-account location grants are not implemented |
+| Data protection and recovery | Confirmed live-history erasure, explicit retention controls, manual SQLite backup verification and restore-to-new-file tools | Offsite encrypted backup, automated restore drills and forensic erasure of exports/backups not accepted |
+| Native apps, hardware and automation | Not implemented as GoreeCloud Location native Android/iOS/Linux apps, dedicated fleet/pet/Bluetooth hardware integrations or external notification gateways | Future independent engineering, privacy and security milestones |
+| Safety and professional services | No crash detection, emergency SOS dispatch, professional response integration or safety-service guarantees | Dedicated, verified systems and approvals required |
 
-### Next priorities
+### Highest-priority next work
 
-1. Extend automated checks with browser and deployment smoke tests.
-2. Perform secure external access review; add account/session rotation and additional throttling.
-3. Implement additional imports, retention controls, full production recovery drills and resumable exports; keyset pagination, manual snapshots and restore-to-new-file now exist in source.
-4. Complete location map tiling and geocoding integration using owner-controlled services.
-5. Add private multiuser circles with explicit consent and independently reviewed authorization.
-6. Add native mobile background tracking after platform-specific security review.
-7. Explore GPS hardware, automation, notifications and safety workflows separately.
+1. Preserve default-deny account boundaries while independently reviewing consent, threat models and negative authorization tests **before** implementing any cross-account live/history sharing.
+2. Verify real mobile/OwnTracks client interoperability and authorized TLS/reverse-proxy configuration; do not expose development endpoints publicly without review.
+3. Add production-level identity hardening (MFA/OIDC when verified), shared rate limiting, monitoring, security assessments, and documented account recovery.
+4. Run independent backup/restore, large-file, load, accessibility and real-device validation. Implement privacy-controlled, offsite recovery when authorized.
+5. Build owner-operated map tiles/geocoding and carefully reviewed native background tracking; only then consider broader hardware, notifications and safety products.
 
-## Verification
+## Current verification
 
-- [GitHub Actions run 41602334393](https://github.com/GoreeCloud/location/actions/runs/41602334393), 3 November 2026: 8 API tests passed, Python compile passed, JavaScript syntax check passed.
-- Tests cover unauthorized access, account isolation, device ingestion, location history/export, geofence transition logic, input validation, session revocation, and login rate limiting.
-- Not tested: live GPS clients, browser rendering, TLS reverse proxy, dedicated hardware, full restore, load/performance, or independent penetration testing.
-
-No real location data or credential is committed. This document should be updated only to reflect verified outcomes.
+- [PR #29](https://github.com/GoreeCloud/location/pull/29) merged a revocable one-time Circles invitation code. [GitHub Actions run 42231244001](https://github.com/GoreeCloud/location/actions/runs/42231244001) passed **95 automated API tests**, Python compilation, JavaScript syntax and desktop/tablet/phone Chromium browser journeys on 6 November 2026.
+- Browser acceptance uses synthetic accounts, synthetic location coordinates and loopback-only HTTP, including account switching, import formats, private history paging, collection controls and invitation workflows. It **does not** verify real physical GPS clients or production internet exposure.
+- Seven framework/dependency test warnings and a Node URL API deprecation warning remain; passing CI is not a security certification or production acceptance.
+- No real account credentials, customer GPS records or deployment secrets are committed in this repository.
 
 ## Development cycle 2 — security and history
 
