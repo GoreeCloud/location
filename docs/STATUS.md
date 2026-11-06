@@ -351,11 +351,13 @@ Verification: [PR #27](https://github.com/GoreeCloud/location/pull/27) merged af
 
 ## Development cycle 25 — Circles consent workspace
 
-**Candidate UI under GitHub CI review (November 6, 2026):**
+**Merged into `main`; automated API and Chromium CI passed November 6, 2026:**
 
 - Add a polished, responsive Circles page to desktop and mobile navigation, with explicit warnings that membership never enables GPS sharing.
 - Support owner circle creation, private one-time code generation, manual invitation by recipient-supplied code, recipient accept/decline and member revocation/exit.
 - Isolate and clear circle metadata and one-time codes on sign-out; guard asynchronous member roster results against account changes.
 - Extend Chromium desktop/tablet/phone journeys to test a two-account synthetic invitation, acceptance and exit without exposing location information.
+
+Verification: [PR #28](https://github.com/GoreeCloud/location/pull/28) merged after [CI run 42225599765](https://github.com/GoreeCloud/location/actions/runs/42225599765) passed **92 API tests**, Python compilation, JavaScript syntax and desktop/tablet/mobile Chromium journeys, including two-account invitation acceptance/exit and no GPS disclosure. The first run revealed a browser test timing race while the member roster was loading; the test now waits for the completed membership state. All data was synthetic.
 
 **Not yet included:** Live/history sharing grants or shared maps, automated notifications, production TLS/identity acceptance, and real device testing. No real account invitation is sent.
