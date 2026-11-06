@@ -68,3 +68,9 @@ No sharing begins. The recipient must independently accept the resulting invitat
 - This preview has no real multi-device or production test. Do not use it as a family safety service or emergency communications tool.
 
 Related: [API](API.md), [Security](SECURITY.md), [Product spec](PRODUCT_SPEC.md), [Status](STATUS.md).
+
+## Immediate revocation of unused codes
+
+An invitee can choose **Revoke my unused code** in the Circles view and confirm, or call authenticated `DELETE /api/circle-invite-code`. An authorized call returns HTTP 204 even when no code is active. The old code cannot be used to create a new invitation; the user can intentionally generate a new one later. Only the signed-in account's code is affected.
+
+**Revocation does not cancel invitations that were already sent or revoke accepted memberships.** Pending invitations must be declined separately; accepted members can leave; owners may remove members. Codes copied to the operating-system clipboard or external messages cannot be erased by the server. Circle membership still grants **no GPS data or location sharing**.
