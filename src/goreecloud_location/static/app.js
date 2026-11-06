@@ -196,6 +196,22 @@ function renderEvents() {
                         new Date(e.recorded_at).toLocaleDateString(), e.kind === "arrival" ? "↘" : "↗"));
   }
 }
+function renderCollectionActivity() {
+  const node = $("collection-activity");
+  node.replaceChildren();
+  if (!state.collectionActivity.length) {
+    return empty(node, "No collection changes yet.");
+  }
+  for (const entry of state.collectionActivity) {
+    const paused = entry.action === "paused";
+    node.append(makeRow(
+      entry.device_name + " · Collection " + (paused ? "paused" : "resumed"),
+      "Server-side privacy setting changed",
+      fmtTime(entry.changed_at),
+      paused ? "Ⅱ" : "▷"
+    ));
+  }
+}
 function confirmEraseHistory(name) {
   return new Promise((resolve) => {
     const dialog = $("erase-dialog");
