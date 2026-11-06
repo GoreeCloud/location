@@ -252,8 +252,9 @@ async function run(){
    await page.locator("#circle-invite-code").fill(inviteCode);
    await page.locator("#circle-invite-form button[type=submit]").click();
    await page.getByRole("button",{name:"View members of "+circleName}).click();
-   await page.locator("#circle-members-list").getByText(secondUser).waitFor({state:"visible"});
-   assert.match(await page.locator("#circle-members-list").innerText(),/pending/);
+   await page.locator("#circle-members-list").getByText("pending",{exact:true})
+     .waitFor({state:"visible"});
+   assert.match(await page.locator("#circle-members-list").innerText(),new RegExp(secondUser));
    await page.screenshot({path:path.join(evidence,v.name+"-circles.png"),fullPage:true});
    const geometry=await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
    assert.ok(geometry.width<=geometry.viewport+2,"Horizontal overflow "+v.name+" "+JSON.stringify(geometry));
