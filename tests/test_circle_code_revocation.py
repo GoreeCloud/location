@@ -5,6 +5,7 @@ already-sent invitations, accepted memberships, or GPS/device credentials.
 """
 from test_api import auth, client, device
 from test_circles import circle, code, invite
+from goreecloud_location.store import create_account
 
 
 def test_invitee_can_revoke_unconsumed_code_and_reissue(client):
@@ -46,10 +47,11 @@ def test_revoke_code_is_account_scoped_and_requires_login(client):
     assert invite_result.json()["sharing_enabled"] is False
 
 
-def test_revoking_another_unused_code_preserves_pending_and_accepted_memberships(client):
+def test_revoking_another_unused_code_preserves_pending_and_accepted_memberships(client, tmp_path):
+    create_account(tmp_path / "private" / "location.db", "carol", "a distinct and sufficiently long third password")
     alice = auth(client)
     bob = auth(client, "bob")
-    carol = auth(client, "carol")
+    carol = auth(client, "carol", password="a distinct and sufficiently long third password")
     group = circle(client, alice)
 
     invitation = invite(client, alice, group["id"], code(client, bob))
