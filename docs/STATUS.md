@@ -361,3 +361,13 @@ Verification: [PR #27](https://github.com/GoreeCloud/location/pull/27) merged af
 Verification: [PR #28](https://github.com/GoreeCloud/location/pull/28) merged after [CI run 42225599765](https://github.com/GoreeCloud/location/actions/runs/42225599765) passed **92 API tests**, Python compilation, JavaScript syntax and desktop/tablet/mobile Chromium journeys, including two-account invitation acceptance/exit and no GPS disclosure. The first run revealed a browser test timing race while the member roster was loading; the test now waits for the completed membership state. All data was synthetic.
 
 **Not yet included:** Live/history sharing grants or shared maps, automated notifications, production TLS/identity acceptance, and real device testing. No real account invitation is sent.
+
+## Development cycle 26 — invitee-controlled code revocation
+
+**Review-branch candidate; GitHub CI and merge pending (November 6, 2026):**
+
+- Add owner-session-only `DELETE /api/circle-invite-code` with idempotent HTTP 204 and transactional code invalidation.
+- Add **Revoke my unused code** to the responsive Circles interface, with confirmation and a warning that pending/accepted memberships are unaffected.
+- Add synthetic regressions for revocation, cross-account isolation, device-token denial, one-time code reissue, pending invitation preservation, and membership separation. Exercise cancellation and confirmation in desktop/tablet/phone Chromium journeys.
+
+**Limits:** Codes copied outside the app cannot be erased remotely. Revocation does not retract invitations already sent or revoke accepted membership. Circles still grant no location-sharing permission. No real users, live GPS data or production systems are modified.
