@@ -124,6 +124,11 @@ async function run(){
    await resumeButton.click();
    await pauseButton.waitFor({state:"visible"});
    assert.equal(await page.locator("#capture-location").isDisabled(),false);
+   await nav("settings").click();
+   const privacyEvents=page.locator("#collection-activity");
+   assert.match(await privacyEvents.innerText(),/Collection resumed/);
+   assert.match(await privacyEvents.innerText(),/Collection paused/);
+   assert.match(await privacyEvents.innerText(),new RegExp(deviceName));
    await nav("overview").click();
    await ctx.grantPermissions(["geolocation"],{origin:url});
    await ctx.setGeolocation({latitude:35.987,longitude:-83.915,accuracy:12});
@@ -236,6 +241,8 @@ async function run(){
    const cleared=await page.evaluate(()=>({
      deviceCount:state.devices.length,pointCount:state.points.length,
      placeCount:state.places.length,eventCount:state.events.length,
+     activityCount:state.collectionActivity.length,
+     activityText:document.querySelector("#collection-activity").textContent,
      retainedSelection:state.selectedHistoryDevice,
      mapCoordinates:document.querySelector("#map-coordinates").textContent,
      oldDeviceText:document.querySelector("#devices-list").textContent,
@@ -247,6 +254,8 @@ async function run(){
      [cleared.deviceCount,cleared.pointCount,cleared.placeCount,cleared.eventCount],
      [0,0,0,0],"Signed-out session must not retain private point arrays");
    assert.equal(cleared.retainedSelection,"");
+   assert.equal(cleared.activityCount,0);
+   assert.doesNotMatch(cleared.activityText,/Synthetic |Collection paused|Collection resumed/);
    assert.equal(cleared.mapCoordinates,"Waiting for location");
    assert.equal(cleared.secret,"");
    assert.equal(cleared.toast,"");
@@ -265,6 +274,7 @@ async function run(){
    await nav("history").click();
    assert.match(await page.locator("#history-table").innerText(),/No matching location records/);
    assert.doesNotMatch(await page.locator("#devices-list").innerText(),/Synthetic /);
+   assert.match(await page.locator("#collection-activity").innerText(),/No collection changes yet/);
    assert.equal(await page.locator("#map-markers").locator("*").count(),0);
    const secondLogout=page.locator(v.width<=680?"#mobile-logout":"#logout");
    await secondLogout.click();
