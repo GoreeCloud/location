@@ -49,6 +49,18 @@ class TrackingControlIn(StrictModel):
     paused: StrictBool
 
 
+class CircleIn(StrictModel):
+    name: str = Field(min_length=1, max_length=80)
+
+
+class CircleInviteIn(StrictModel):
+    invite_code: str = Field(min_length=32, max_length=96)
+
+
+class CircleDecisionIn(StrictModel):
+    accept: StrictBool
+
+
 class PlaceIn(StrictModel):
     name: str = Field(min_length=1, max_length=80)
     latitude: float = Field(ge=-90, le=90)
