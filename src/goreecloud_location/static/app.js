@@ -238,6 +238,137 @@ function renderCollectionActivity() {
     ));
   }
 }
+async function loadCircleMembers(circleId) {
+  const requestToken = state.token, sequence = ++state.circleSequence;
+  state.selectedCircleId = circleId;
+  state.circleMembers = [];
+  renderCircleMembers();
+  try {
+    const members = await api("/api/circles/" + encodeURIComponent(circleId) + "/members");
+    if (!state.user || state.token !== requestToken ||
+        state.circleSequence !== sequence || state.selectedCircleId !== circleId) return;
+    state.circleMembers = members;
+    renderCircleMembers();
+  } catch (error) {
+    if (state.token === requestToken && state.circleSequence === sequence)
+      showToast(error.message);
+  }
+}
+function renderCircles() {
+  const node = $("circles-list");
+  node.replaceChildren();
+  const target = $("circle-invite-target");
+  const previous = target.value;
+  target.replaceChildren();
+  makeChoice(target, "", "Select one of your circles");
+  const owned = state.circles.filter(c => c.role === "owner");
+  for (const c of owned) makeChoice(target, c.id, c.name);
+  if (owned.some(c => String(c.id) === previous)) target.value = previous;
+  target.disabled = !owned.length;
+  if (!state.circles.length) return empty(node, "No circles yet. Create one or accept an invitation.");
+  for (const c of state.circles) {
+    const row = elt("div", "item-card");
+    const info = elt("div", "list-body");
+    info.append(elt("strong", "", c.name),
+                elt("p", "", c.role === "owner"
+                  ? "You own this private circle"
+                  : "Joined · invited by " + c.owner_username),
+                elt("p", "form-note", "Location sharing is off."));
+    const actions = elt("div", "item-actions");
+    const members = elt("button", "tiny-action", "Members");
+    members.type = "button";
+    members.setAttribute("aria-label", "View members of " + c.name);
+    members.addEventListener("click", () => loadCircleMembers(c.id));
+    const leave = elt("button", "tiny-action", c.role === "owner" ? "Delete" : "Leave");
+    leave.type = "button";
+    leave.setAttribute("aria-label",
+      (c.role === "owner" ? "Delete circle " : "Leave circle ") + c.name);
+    leave.addEventListener("click", async () => {
+      const owner = c.role === "owner";
+      if (!window.confirm((owner ? "Delete circle " : "Leave circle ") + c.name
+        + "? This removes membership only, never GPS histories.")) return;
+      try {
+        await api("/api/circles/" + c.id + (owner ? "" : "/membership"), {method:"DELETE"});
+        if (state.selectedCircleId === c.id) {
+          state.selectedCircleId = null;
+          state.circleMembers = [];
+          state.circleSequence++;
+        }
+        await refresh();
+        showToast(owner ? "Circle deleted." : "You left the circle.");
+      } catch (error) { showToast(error.message); }
+    });
+    actions.append(members, leave);
+    row.append(elt("div", "list-avatar", "◎"), info, actions);
+    node.append(row);
+  }
+}
+function renderCircleInvitations() {
+  const node = $("circle-invitations-list");
+  node.replaceChildren();
+  if (!state.circleInvitations.length) return empty(node, "No pending invitations.");
+  for (const pending of state.circleInvitations) {
+    const row = elt("div", "item-card");
+    const info = elt("div", "list-body");
+    info.append(elt("strong", "", pending.circle_name),
+      elt("p", "", "From " + pending.inviter_username),
+      elt("p", "form-note", "Expires " + fmtTime(pending.expires_at) + " · GPS sharing off"));
+    const actions = elt("div", "item-actions");
+    for (const accept of [true, false]) {
+      const control = elt("button", "tiny-action", accept ? "Accept" : "Decline");
+      control.type = "button";
+      control.setAttribute("aria-label",
+        (accept ? "Accept" : "Decline") + " invitation to " + pending.circle_name);
+      control.addEventListener("click", async () => {
+        if (accept && !window.confirm("Join " + pending.circle_name
+            + "? This joins membership only. No locations are shared.")) return;
+        try {
+          await api("/api/circle-invitations/" + pending.id + "/respond", {
+            method:"POST", body:JSON.stringify({accept})
+          });
+          await refresh();
+          showToast(accept ? "Joined circle. GPS stays private." : "Invitation declined.");
+        } catch (error) { showToast(error.message); }
+      });
+      actions.append(control);
+    }
+    row.append(elt("div", "list-avatar", "◇"), info, actions);
+    node.append(row);
+  }
+}
+function renderCircleMembers() {
+  const node = $("circle-members-list");
+  node.replaceChildren();
+  const circle = state.circles.find(c => c.id === state.selectedCircleId);
+  text("circle-members-title", circle ? circle.name + " · Members" : "Circle members");
+  if (!circle) return empty(node, "Choose a circle to view members.");
+  if (!state.circleMembers.length) return empty(node, "Loading members or no members yet.");
+  for (const member of state.circleMembers) {
+    const row = elt("div", "item-card");
+    const info = elt("div", "list-body");
+    info.append(elt("strong", "", member.username),
+      elt("p", "", member.role === "owner" ? "Circle owner" : member.status));
+    row.append(elt("div", "list-avatar", "◎"), info);
+    if (circle.role === "owner" && member.role !== "owner") {
+      const revoke = elt("button", "tiny-action", "Remove");
+      revoke.type = "button";
+      revoke.setAttribute("aria-label", "Remove " + member.username + " from " + circle.name);
+      revoke.addEventListener("click", async () => {
+        if (!window.confirm("Remove " + member.username
+            + " from " + circle.name + "?")) return;
+        try {
+          await api("/api/circles/" + circle.id + "/members/" + member.account_id,
+                    {method:"DELETE"});
+          await refresh();
+          await loadCircleMembers(circle.id);
+          showToast("Member removed.");
+        } catch (error) { showToast(error.message); }
+      });
+      row.append(revoke);
+    }
+    node.append(row);
+  }
+}
 function confirmEraseHistory(name) {
   return new Promise((resolve) => {
     const dialog = $("erase-dialog");
