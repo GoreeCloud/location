@@ -122,6 +122,38 @@ def initialize(path: Path) -> None:
         )""")
         db.execute("""CREATE INDEX IF NOT EXISTS idx_collection_activity_device
             ON collection_activity(device_id, id DESC)""")
+        # Circle membership is invitation-only and never grants location
+        # access. Share codes are random, one-time and hashed at rest.
+        db.executescript("""
+            CREATE TABLE IF NOT EXISTS circles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                owner_account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+                name TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_circles_owner ON circles(owner_account_id);
+            CREATE TABLE IF NOT EXISTS circle_invite_codes (
+                account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+                token_hash TEXT NOT NULL UNIQUE,
+                expires_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_circle_code_expiry
+                ON circle_invite_codes(expires_at);
+            CREATE TABLE IF NOT EXISTS circle_memberships (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                circle_id INTEGER NOT NULL REFERENCES circles(id) ON DELETE CASCADE,
+                account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+                status TEXT NOT NULL CHECK(status IN ('pending','accepted','declined')),
+                invited_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                responded_at TEXT,
+                UNIQUE(circle_id,account_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_circle_memberships_user
+                ON circle_memberships(account_id,status,id DESC);
+            CREATE INDEX IF NOT EXISTS idx_circle_memberships_circle
+                ON circle_memberships(circle_id,status);
+        """)
         # Preserve existing self-hosted databases while adding a reversible
         # owner collection switch. No GPS history or tracker credentials change.
         # Serialize migrations across concurrent service starts.

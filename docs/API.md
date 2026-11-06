@@ -10,6 +10,16 @@ All routes below use JSON unless otherwise noted. There are **no public location
 | POST | `/api/auth/logout` | User session | Revoke one session |
 | POST | `/api/auth/logout-all` | User session | Revoke every existing login session owned by this account; device keys unaffected |
 | GET | `/api/me` | User session | Current user |
+| POST | `/api/circles` | User session | Create private named circle (no location sharing) |
+| GET | `/api/circles` | User session | List circles owned or explicitly accepted |
+| POST | `/api/circle-invite-code` | User session | Generate one-time 30-minute recipient code; hashed at rest |
+| POST | `/api/circles/{id}/invite` | Circle owner | Consume recipient code; pending 7-day invitation |
+| GET | `/api/circle-invitations` | User session | Only invitations addressed to current account |
+| POST | `/api/circle-invitations/{id}/respond` | Invitee session | Explicitly accept or decline |
+| GET | `/api/circles/{id}/members` | Circle owner/accepted member | View authorized member identities |
+| DELETE | `/api/circles/{id}/members/{account_id}` | Circle owner | Revoke member/invitation |
+| DELETE | `/api/circles/{id}/membership` | Accepted member | Leave a circle |
+| DELETE | `/api/circles/{id}` | Circle owner | Remove a circle and memberships |
 | GET | `/api/summary` | User session | Counts of devices, points, places, events |
 | GET | `/api/devices` | User session | Owner devices with last positions |
 | POST | `/api/devices` | User session | Create device; receive ingestion token once |
@@ -137,3 +147,7 @@ The History dashboard loads `GET /api/locations/page?limit=100` for the initial 
 ## Owner-only collection activity
 
 `GET /api/privacy/collection-activity` returns up to 50 most recent collection setting changes, with an optional owned `device_id` and a `limit` of 1–100. Fields are `id`, `device_id`, `device_name`, `action` and `changed_at` (server UTC). The endpoint requires a user session; device upload keys cannot read it. The database keeps at most 100 changes per device and cascades them on device deletion, while ordinary GPS-history clearing leaves them intact. [Privacy behavior](COLLECTION_CONTROL.md).
+
+## Invitation-only circles (metadata, not GPS sharing)
+
+All circle endpoints require an authenticated account session. An intended invitee must actively generate a short-lived, one-time code and communicate it to a circle owner; the owner uses that code to invite and the recipient must separately accept. Invitations expire after 7 days. Circle metadata access requires ownership or accepted membership; owners can revoke and members can leave. **No endpoint grants cross-account GPS/history/device access to a member.** No public directory, anonymous links or external messages. [Workflow and privacy boundaries](CIRCLES.md).

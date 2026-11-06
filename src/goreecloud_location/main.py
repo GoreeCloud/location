@@ -49,6 +49,18 @@ class TrackingControlIn(StrictModel):
     paused: StrictBool
 
 
+class CircleIn(StrictModel):
+    name: str = Field(min_length=1, max_length=80)
+
+
+class CircleInviteIn(StrictModel):
+    invite_code: str = Field(min_length=32, max_length=96)
+
+
+class CircleDecisionIn(StrictModel):
+    accept: StrictBool
+
+
 class PlaceIn(StrictModel):
     name: str = Field(min_length=1, max_length=80)
     latitude: float = Field(ge=-90, le=90)
@@ -345,6 +357,244 @@ def create_app(db_path: Path | None = None) -> FastAPI:
     @app.get("/api/me")
     def me(user=Depends(account)):
         return user
+
+    # Circles are an invitation/membership foundation only.
+    # They never grant access to GPS, geofence, export, or device endpoints.
+    def owned_circle(db, account_id: int, circle_id: int):
+        circle = db.execute(
+            "SELECT * FROM circles WHERE id=? AND owner_account_id=?",
+            (circle_id, account_id),
+        ).fetchone()
+        if circle is None:
+            api_error(404, "Circle not found")
+        return circle
+
+    def visible_circle(db, account_id: int, circle_id: int):
+        circle = db.execute(
+            """SELECT c.* FROM circles c WHERE c.id=?
+               AND (c.owner_account_id=? OR EXISTS (
+                 SELECT 1 FROM circle_memberships m
+                 WHERE m.circle_id=c.id AND m.account_id=? AND m.status='accepted'
+               ))""",
+            (circle_id, account_id, account_id),
+        ).fetchone()
+        if circle is None:
+            api_error(404, "Circle not found")
+        return circle
+
+    @app.post("/api/circles", status_code=201)
+    def create_circle(body: CircleIn, user=Depends(account)):
+        with connect(path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            count = db.execute(
+                "SELECT COUNT(*) FROM circles WHERE owner_account_id=?",
+                (user["id"],),
+            ).fetchone()[0]
+            if count >= 20:
+                api_error(409, "Maximum of 20 owned circles")
+            now = utc_now()
+            cur = db.execute(
+                "INSERT INTO circles(owner_account_id,name,created_at) VALUES(?,?,?)",
+                (user["id"], clean_name(body.name), now),
+            )
+        return {"id": cur.lastrowid, "name": clean_name(body.name),
+                "role": "owner", "created_at": now, "sharing_enabled": False}
+
+    @app.get("/api/circles")
+    def list_circles(user=Depends(account)):
+        with connect(path) as db:
+            rows = db.execute(
+                """SELECT c.id,c.name,c.created_at,o.username AS owner_username,
+                          CASE WHEN c.owner_account_id=? THEN 'owner'
+                          ELSE 'member' END AS role
+                   FROM circles c
+                   JOIN accounts o ON o.id=c.owner_account_id
+                   LEFT JOIN circle_memberships m ON m.circle_id=c.id
+                       AND m.account_id=? AND m.status='accepted'
+                   WHERE c.owner_account_id=? OR m.id IS NOT NULL
+                   ORDER BY c.id DESC LIMIT 100""",
+                (user["id"], user["id"], user["id"]),
+            ).fetchall()
+        return [{**rowdict(row), "sharing_enabled": False} for row in rows]
+
+    @app.post("/api/circle-invite-code", status_code=201)
+    def create_circle_invite_code(user=Depends(account)):
+        """One-time, account-chosen proof of willingness to receive an invite.
+
+        The code is displayed once, stored only as its hash, and expires
+        after 30 minutes. Sharing it does not grant location access.
+        """
+        code = secrets.token_urlsafe(32)
+        expires = (datetime.now(timezone.utc) + timedelta(minutes=30)).isoformat(
+            timespec="milliseconds"
+        )
+        with connect(path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            db.execute("DELETE FROM circle_invite_codes WHERE expires_at<=?", (utc_now(),))
+            db.execute(
+                """INSERT INTO circle_invite_codes(account_id,token_hash,expires_at)
+                   VALUES(?,?,?) ON CONFLICT(account_id) DO UPDATE SET
+                   token_hash=excluded.token_hash,expires_at=excluded.expires_at""",
+                (user["id"], token_digest(code), expires),
+            )
+        return {"invite_code": code, "expires_at": expires,
+                "warning": "Share only with someone you want to invite you to a circle. The code works once and does not share GPS."}
+
+    @app.post("/api/circles/{circle_id}/invite", status_code=201)
+    def invite_to_circle(circle_id: int, body: CircleInviteIn,
+                         user=Depends(account)):
+        with connect(path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            owned_circle(db, user["id"], circle_id)
+            code = db.execute(
+                """SELECT account_id FROM circle_invite_codes
+                   WHERE token_hash=? AND expires_at>?""",
+                (token_digest(body.invite_code), utc_now()),
+            ).fetchone()
+            if code is None:
+                api_error(422, "Invalid or expired invite code")
+            recipient = code["account_id"]
+            if recipient == user["id"]:
+                api_error(422, "Cannot invite yourself")
+            active_count = db.execute(
+                """SELECT COUNT(*) FROM circle_memberships WHERE circle_id=?
+                   AND (status='accepted' OR (status='pending' AND expires_at>?))""",
+                (circle_id, utc_now()),
+            ).fetchone()[0]
+            if active_count >= 20:
+                api_error(409, "Circle is at its 20-member invitation limit")
+            existing = db.execute(
+                """SELECT id,status,expires_at FROM circle_memberships
+                   WHERE circle_id=? AND account_id=?""",
+                (circle_id, recipient),
+            ).fetchone()
+            if existing:
+                if existing["status"] == "accepted" or (
+                    existing["status"] == "pending" and existing["expires_at"] > utc_now()
+                ):
+                    api_error(409, "Account already invited or joined")
+                # A fresh one-time invite replaces a declined/expired request.
+                db.execute("DELETE FROM circle_memberships WHERE id=?", (existing["id"],))
+            now = utc_now()
+            expires = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(
+                timespec="milliseconds"
+            )
+            cur = db.execute(
+                """INSERT INTO circle_memberships
+                   (circle_id,account_id,status,invited_at,expires_at)
+                   VALUES(?,?,'pending',?,?)""",
+                (circle_id, recipient, now, expires),
+            )
+            # Consume only after the invitation is successfully created.
+            db.execute("DELETE FROM circle_invite_codes WHERE account_id=?", (recipient,))
+        return {"id": cur.lastrowid, "status": "pending",
+                "expires_at": expires, "sharing_enabled": False}
+
+    @app.get("/api/circle-invitations")
+    def list_circle_invitations(user=Depends(account)):
+        with connect(path) as db:
+            rows = db.execute(
+                """SELECT m.id,m.circle_id,c.name AS circle_name,
+                          a.username AS inviter_username,m.invited_at,m.expires_at
+                   FROM circle_memberships m JOIN circles c ON c.id=m.circle_id
+                   JOIN accounts a ON a.id=c.owner_account_id
+                   WHERE m.account_id=? AND m.status='pending'
+                     AND m.expires_at>?
+                   ORDER BY m.id DESC LIMIT 100""",
+                (user["id"], utc_now()),
+            ).fetchall()
+        return [rowdict(row) for row in rows]
+
+    @app.post("/api/circle-invitations/{invite_id}/respond")
+    def respond_to_circle_invitation(invite_id: int, body: CircleDecisionIn,
+                                     user=Depends(account)):
+        with connect(path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            invite = db.execute(
+                "SELECT * FROM circle_memberships WHERE id=? AND account_id=?",
+                (invite_id, user["id"]),
+            ).fetchone()
+            if invite is None:
+                api_error(404, "Invitation not found")
+            if invite["status"] != "pending":
+                api_error(409, "Invitation already answered")
+            if invite["expires_at"] <= utc_now():
+                api_error(410, "Invitation expired")
+            new_status = "accepted" if body.accept else "declined"
+            db.execute(
+                """UPDATE circle_memberships SET status=?,responded_at=?
+                   WHERE id=? AND account_id=?""",
+                (new_status, utc_now(), invite_id, user["id"]),
+            )
+        return {"id": invite_id, "status": new_status, "sharing_enabled": False}
+
+    @app.get("/api/circles/{circle_id}/members")
+    def list_circle_members(circle_id: int, user=Depends(account)):
+        with connect(path) as db:
+            circle = visible_circle(db, user["id"], circle_id)
+            is_owner = circle["owner_account_id"] == user["id"]
+            owner = db.execute(
+                "SELECT username FROM accounts WHERE id=?",
+                (circle["owner_account_id"],),
+            ).fetchone()
+            # Do not expose stale pending requests after their expiry.
+            conditions = ("(m.status='accepted' OR "
+                          "(m.status='pending' AND m.expires_at>?))") if is_owner else "m.status='accepted'"
+            args = (circle_id, utc_now()) if is_owner else (circle_id,)
+            members = db.execute(
+                f"""SELECT m.account_id,m.status,a.username
+                    FROM circle_memberships m
+                    JOIN accounts a ON a.id=m.account_id
+                    WHERE m.circle_id=? AND {conditions}
+                    ORDER BY m.id""",
+                args,
+            ).fetchall()
+        return [{"account_id": circle["owner_account_id"],
+                 "username": owner["username"], "role": "owner", "status": "accepted"}] + [
+            {"account_id": row["account_id"], "username": row["username"],
+             "role": "member", "status": row["status"]} for row in members
+        ]
+
+    @app.delete("/api/circles/{circle_id}/members/{account_id}", status_code=204)
+    def remove_circle_member(circle_id: int, account_id: int,
+                             user=Depends(account)):
+        with connect(path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            owned_circle(db, user["id"], circle_id)
+            affected = db.execute(
+                "DELETE FROM circle_memberships WHERE circle_id=? AND account_id=?",
+                (circle_id, account_id),
+            ).rowcount
+            if not affected:
+                api_error(404, "Circle member not found")
+        return Response(status_code=204)
+
+    @app.delete("/api/circles/{circle_id}/membership", status_code=204)
+    def leave_circle(circle_id: int, user=Depends(account)):
+        with connect(path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            circle = visible_circle(db, user["id"], circle_id)
+            if circle["owner_account_id"] == user["id"]:
+                api_error(409, "Circle owner must delete their circle")
+            affected = db.execute(
+                """DELETE FROM circle_memberships
+                   WHERE circle_id=? AND account_id=? AND status='accepted'""",
+                (circle_id, user["id"]),
+            ).rowcount
+            if not affected:
+                api_error(404, "Circle membership not found")
+        return Response(status_code=204)
+
+    @app.delete("/api/circles/{circle_id}", status_code=204)
+    def delete_circle(circle_id: int, user=Depends(account)):
+        with connect(path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            owned_circle(db, user["id"], circle_id)
+            db.execute(
+                "DELETE FROM circles WHERE id=? AND owner_account_id=?",
+                (circle_id, user["id"]),
+            )
+        return Response(status_code=204)
 
     def retention_cutoff(older_than_days: int) -> str:
         return (datetime.now(timezone.utc) - timedelta(days=older_than_days)).isoformat(
