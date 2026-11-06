@@ -151,3 +151,7 @@ The History dashboard loads `GET /api/locations/page?limit=100` for the initial 
 ## Invitation-only circles (metadata, not GPS sharing)
 
 All circle endpoints require an authenticated account session. An intended invitee must actively generate a short-lived, one-time code and communicate it to a circle owner; the owner uses that code to invite and the recipient must separately accept. Invitations expire after 7 days. Circle metadata access requires ownership or accepted membership; owners can revoke and members can leave. **No endpoint grants cross-account GPS/history/device access to a member.** No public directory, anonymous links or external messages. [Workflow and privacy boundaries](CIRCLES.md).
+
+## Revoke an unused circle invitation code
+
+`DELETE /api/circle-invite-code` requires the current account's bearer session and revokes only its own unused, one-time circle code. Returns HTTP **204** with no body, including when the code was already consumed or absent. A device ingestion token cannot use this endpoint. Previously created pending invitations and accepted memberships stay unchanged; those have separate decline/leave/revoke actions. This is an invitation-consent feature, not a GPS-sharing permission.
