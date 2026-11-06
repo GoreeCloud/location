@@ -774,6 +774,18 @@ function setupEvents() {
       $("secret-dialog").showModal();
     } catch (error) { showToast(error.message); }
   });
+  $("circle-code-revoke").addEventListener("click", async () => {
+    if (!window.confirm("Revoke your unused invitation code now? Any invitation already sent will remain pending, and accepted memberships will remain active.")) return;
+    try {
+      await api("/api/circle-invite-code", {method:"DELETE"});
+      if ($("secret-dialog").open
+          && $("secret-title").textContent === "Your one-time invitation code") {
+        $("secret-dialog").close();
+        text("device-secret", "");
+      }
+      showToast("Unused invitation code revoked. Existing invitations are unchanged.");
+    } catch (error) { showToast(error.message); }
+  });
   $("circle-invite-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const circleId = $("circle-invite-target").value;
