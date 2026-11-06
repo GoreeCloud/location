@@ -371,3 +371,13 @@ Verification: [PR #28](https://github.com/GoreeCloud/location/pull/28) merged af
 - Add synthetic regressions for revocation, cross-account isolation, device-token denial, one-time code reissue, pending invitation preservation, and membership separation. Exercise cancellation and confirmation in desktop/tablet/phone Chromium journeys.
 
 Verification: [PR #29](https://github.com/GoreeCloud/location/pull/29) was squash-merged after [CI run 42231244001](https://github.com/GoreeCloud/location/actions/runs/42231244001) passed **95 automated API tests**, Python compilation, JS syntax checks, and desktop/tablet/phone Chromium browser journeys. The first run found an uninitialized third test account and an asynchronous mobile member-roster assertion; both tests were corrected and reverified. Seven framework/dependency warnings remain. No production or real GPS data was modified.\n\n**Limits:** Codes copied outside the app cannot be erased remotely. Revocation does not retract invitations already sent or revoke accepted membership. Circles still grant no location-sharing permission. No real users, live GPS data or production systems are modified.
+
+## Development cycle 27 — future location sharing security contract
+
+**Documentation-only proposal; no implementation or GPS sharing (November 6, 2026):**
+
+- Draft explicit deny-by-default, two-party consent, per-device/per-recipient data scoping, fresh authorization on every read, and immediate revocation requirements before adding any circle GPS access.
+- Specify separate live vs historical grants, rejection of implicit circle membership permission, same-origin imagery, stale/paused location behavior, client cache risks, and an adversarial testing matrix.
+- Require independently reviewed privacy/security and affirmative founder approval **before** any sharing rollout. This milestone changes documentation only, with no grant database migration, new API, feature flag, or deployment.
+
+Design reference: [Circle sharing security design](CIRCLE_SHARING_SECURITY_DESIGN.md).
