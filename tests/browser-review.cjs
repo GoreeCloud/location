@@ -345,6 +345,7 @@ async function run(){
    assert.equal(await page.locator("#metric-devices").textContent(),"0");
    await page.getByRole("button",{name:"View members of "+circleName}).click();
    await page.locator("#circle-members-list").getByText(secondUser).waitFor({state:"visible"});
+   page.once("dialog",dialog=>dialog.accept());
    await page.locator("#circle-code-revoke").click();
    await page.getByText("Unused invitation code revoked. Existing invitations are unchanged.")
      .waitFor({state:"visible"});
