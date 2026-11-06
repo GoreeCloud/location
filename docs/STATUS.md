@@ -364,10 +364,12 @@ Verification: [PR #29](https://github.com/GoreeCloud/location/pull/29) was squas
 
 ## Development cycle 27 — future location sharing security contract
 
-**Documentation-only proposal; no implementation or GPS sharing (November 6, 2026):**
+**Documentation-only proposal merged into `main`; no implementation or GPS sharing (November 6, 2026):**
 
 - Draft explicit deny-by-default, two-party consent, per-device/per-recipient data scoping, fresh authorization on every read, and immediate revocation requirements before adding any circle GPS access.
 - Specify separate live vs historical grants, rejection of implicit circle membership permission, same-origin imagery, stale/paused location behavior, client cache risks, and an adversarial testing matrix.
 - Require independently reviewed privacy/security and affirmative founder approval **before** any sharing rollout. This milestone changes documentation only, with no grant database migration, new API, feature flag, or deployment.
 
 Design reference: [Circle sharing security design](CIRCLE_SHARING_SECURITY_DESIGN.md).
+
+Verification: [PR #30](https://github.com/GoreeCloud/location/pull/30) merged after [GitHub Actions run 42233747925](https://github.com/GoreeCloud/location/actions/runs/42233747925) passed **95 automated API tests**, Python compilation, JavaScript syntax and Chromium desktop/tablet/phone browser journeys. This was a documentation-only proposal; no grant model, API, cross-account location permission, live data or deployment was introduced.
