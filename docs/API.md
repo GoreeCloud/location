@@ -14,6 +14,7 @@ All routes below use JSON unless otherwise noted. There are **no public location
 | GET | `/api/devices` | User session | Owner devices with last positions |
 | POST | `/api/devices` | User session | Create device; receive ingestion token once |
 | PUT | `/api/devices/{id}/collection` | Owner session | Pause or resume new GPS collection without erasing history |
+| GET | `/api/privacy/collection-activity?device_id=N&limit=50` | User session | Recent owner-only pause/resume actions (up to 100) without GPS positions |
 | POST | `/api/devices/{id}/rotate-token` | Owner session | Issue new device upload token, revoke previous token, preserve history |
 | DELETE | `/api/devices/{id}/history` | Owner session | Delete device points, events and fence state; retain device/key |
 | DELETE | `/api/devices/{id}` | Owner session | Delete device and all its positions/events |
@@ -132,3 +133,7 @@ POST `/api/devices/{id}/import/geojson` with the account bearer session and raw 
 ## Browsing history beyond the recent map
 
 The History dashboard loads `GET /api/locations/page?limit=100` for the initial 100 account-owned positions, and follows its `next_cursor` only after the user selects **Load older positions**. With a `device_id` filter, all pages remain restricted to that account-owned device. Selecting a different device resets the cursor. The endpoint returns `items`, `has_more` and `next_cursor`; a cursor is not a credential and the server independently authorizes every request. The overview map uses a separate bounded request for recent positions, while exports can stream complete owned histories.
+
+## Owner-only collection activity
+
+`GET /api/privacy/collection-activity` returns up to 50 most recent collection setting changes, with an optional owned `device_id` and a `limit` of 1–100. Fields are `id`, `device_id`, `device_name`, `action` and `changed_at` (server UTC). The endpoint requires a user session; device upload keys cannot read it. The database keeps at most 100 changes per device and cascades them on device deletion, while ordinary GPS-history clearing leaves them intact. [Privacy behavior](COLLECTION_CONTROL.md).
