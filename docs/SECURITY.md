@@ -122,3 +122,7 @@ An authenticated owner can use `PUT /api/devices/{id}/collection` with a strict 
 ## Session-bound browser History pagination
 
 The History interface now uses the account-checked cursor page endpoint rather than client-only filtering of the map's latest 1,000 points. Device ownership is enforced in SQL for every page regardless of cursor. The browser clears historical pages and cursor state on sign-out, and does not apply delayed responses after the session or selected device changes. A cursor confers no rights; exported archives, downloaded data, screenshots and offline copies must be protected separately.
+
+## Private collection-control activity records
+
+The server records genuine owner-driven collection pauses/resumptions for transparency. Each row contains only a device reference, an action and server UTC time. A single transaction updates the pause flag, writes the activity row and prunes the device history to 100 events; repeated requests that leave the state unchanged do not create records. The owner-only read API verifies the account on every query and returns current device names but **no GPS positions, passwords, device-upload keys, IP addresses or user agents**. Reverse-proxy access logs are independently governed. Clearing ordinary GPS history leaves these control records intact; device deletion cascades them. The records are not tamper-evident, legally certified audit trails and do not establish informed consent by themselves.
